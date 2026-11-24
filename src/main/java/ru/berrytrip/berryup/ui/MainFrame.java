@@ -64,6 +64,7 @@ public class MainFrame extends JFrame {
     private final Widgets.BerryButton folderButton;
     private final Banner banner;
     private boolean pingRunning;
+    private boolean modsSyncing;
 
     public MainFrame() {
         super("BerryUp " + Cfg.VERSION);
@@ -358,6 +359,11 @@ public class MainFrame extends JFrame {
     }
 
     public void play(boolean connect) {
+        if (prism != null && prism.hasInstance() && prism.modCount() == 0 && !modsSyncing) {
+            // инстанс только что установлен: сначала packwiz, иначе игра запустится без модов
+            syncModsThenPlay(connect);
+            return;
+        }
         if (prism == null || !prism.hasInstance()) {
             setState("Сборка не установлена", Palette.WARN);
             JOptionPane.showMessageDialog(this,
@@ -375,6 +381,42 @@ public class MainFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Не удалось запустить игру:\n" + error.getMessage(),
                     Cfg.APP_NAME, JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    /** Докачивает моды и только потом запускает игру. */
+    private void syncModsThenPlay(boolean connect) {
+        modsSyncing = true;
+        setState("Скачиваю моды сборки…", Palette.WARN);
+        playButton.setEnabled(false);
+        connectButton.setEnabled(false);
+        new Thread(() -> {
+            String failure = null;
+            try {
+                int code = Sync.updatePack(prism);
+                if (code != 0) failure = "packwiz завершился с кодом " + code;
+                else if (prism.modCount() == 0) failure = "моды не появились в папке сборки";
+            } catch (Exception error) {
+                failure = error.getMessage();
+            }
+            final String problem = failure;
+            SwingUtilities.invokeLater(() -> {
+                modsSyncing = false;
+                playButton.setEnabled(true);
+                connectButton.setEnabled(true);
+                diag.refresh();
+                if (problem == null) {
+                    setState("Моды скачаны", Palette.OK);
+                    play(connect);
+                } else {
+                    setState("Моды не скачались", Palette.ERR);
+                    JOptionPane.showMessageDialog(this,
+                            "Не удалось скачать моды сборки:\n" + problem
+                                    + "\n\nОткрой Prism и запусти игру один раз — он скачает Java,\n"
+                                    + "затем нажми «Обновить сборку» или «Играть» ещё раз.",
+                            Cfg.APP_NAME, JOptionPane.WARNING_MESSAGE);
+                }
+            });
+        }, "berry-first-sync").start();
     }
 
     public void updatePack() {
@@ -414,9 +456,28 @@ public class MainFrame extends JFrame {
         new Thread(() -> {
             try {
                 Sync.install(prism, (text, bar) -> SwingUtilities.invokeLater(() -> setState(text, Palette.WARN)));
+                // моды качает packwiz: без них инстанс запустится пустым
+                SwingUtilities.invokeLater(() -> setState("Скачиваю моды сборки…", Palette.WARN));
+                String warning = null;
+                try {
+                    int code = Sync.updatePack(prism);
+                    if (code != 0) warning = "packwiz завершился с кодом " + code;
+                } catch (Exception syncError) {
+                    warning = syncError.getMessage();
+                }
+                final String problem = warning;
                 SwingUtilities.invokeLater(() -> {
                     refreshAll();
-                    setState("Сборка установлена", Palette.OK);
+                    if (problem == null) {
+                        setState("Сборка установлена", Palette.OK);
+                    } else {
+                        setState("Сборка установлена, моды не скачались", Palette.WARN);
+                        JOptionPane.showMessageDialog(this,
+                                "Сборка распакована, но моды не скачались:\n" + problem
+                                        + "\n\nЗапусти Prism один раз, чтобы он скачал Java,\n"
+                                        + "затем нажми «Обновить сборку».",
+                                Cfg.APP_NAME, JOptionPane.WARNING_MESSAGE);
+                    }
                 });
             } catch (Exception error) {
                 Log.error("Установка не удалась: " + error.getMessage());
