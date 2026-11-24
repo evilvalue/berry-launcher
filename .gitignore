@@ -1,5 +1,6 @@
 .gradle/
-build/
+build/*
+!build/publish-java.ps1
 .tools/
 *.iml
 .idea/
