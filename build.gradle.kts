@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "ru.berrytrip"
-version = "3.2.1"
+version = "3.2.2"
 
 // Java 8 target: jar запускается и на Java 8, и на Java 21, которая уже есть у Prism.
 java {
@@ -54,6 +54,11 @@ val fatJar by tasks.registering(Jar::class) {
             .map { zipTree(it) }
     })
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "module-info.class")
+    // Нативные библиотеки FlatLaf не используются: окно обычное, без native-декораций.
+    // Без них в jar нет ни одного .dll/.so, и антивирусам нечего распаковывать в temp.
+    exclude("com/formdev/flatlaf/natives/*.dll")
+    exclude("com/formdev/flatlaf/natives/*.so")
+    exclude("com/formdev/flatlaf/natives/*.dylib")
 }
 
 tasks.named("build") {

@@ -93,6 +93,9 @@ public final class Main {
             return;
         }
 
+        // Без нативных библиотек FlatLaf: ничего не распаковывается во временную папку.
+        System.setProperty("flatlaf.useNativeLibrary", "false");
+        System.setProperty("flatlaf.useWindowDecorations", "false");
         FlatDarkLaf.setup();
         UIManager.put("Component.focusWidth", 0);
         UIManager.put("ScrollBar.showButtons", false);
@@ -174,6 +177,8 @@ public final class Main {
         final File dir = new File(directory);
         if (!dir.isDirectory() && !dir.mkdirs()) return 2;
         System.setProperty("berryup.render", "1");
+        System.setProperty("flatlaf.useNativeLibrary", "false");
+        System.setProperty("flatlaf.useWindowDecorations", "false");
         FlatDarkLaf.setup();
         UIManager.put("Component.focusWidth", 0);
         UIManager.put("ScrollBar.width", 10);
