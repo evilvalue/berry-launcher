@@ -76,6 +76,7 @@ public class SkinView extends JComponent {
     // как в QuickSkin: спокойный разворот влево-вперёд, без автовращения
     private double yaw = 20;
     private double pitch = 0;
+    private long lastDrag;
     private int dragX;
     private int dragY;
     private boolean dragging;
@@ -93,11 +94,13 @@ public class SkinView extends JComponent {
                 dragging = true;
                 dragX = e.getX();
                 dragY = e.getY();
+                lastDrag = System.currentTimeMillis();
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
                 dragging = false;
+                lastDrag = System.currentTimeMillis();
             }
         });
         addMouseMotionListener(new MouseMotionAdapter() {
@@ -108,14 +111,20 @@ public class SkinView extends JComponent {
                 pitch = Math.max(-24, Math.min(24, pitch - (e.getY() - dragY) * 0.35));
                 dragX = e.getX();
                 dragY = e.getY();
+                lastDrag = System.currentTimeMillis();
                 repaint();
             }
         });
 
-        // модель стоит на месте, как в QuickSkin; двигается только плащ
+        // медленное вращение, как в QuickSkin; после драга модель замирает на пару секунд
         new Timer(40, event -> {
             if (!isShowing() || dragging) return;
-            if (cape != null) repaint();
+            if (System.currentTimeMillis() - lastDrag < 1600) {
+                if (cape != null) repaint();
+                return;
+            }
+            yaw += 0.16;
+            repaint();
         }).start();
     }
 
@@ -170,6 +179,7 @@ public class SkinView extends JComponent {
     public void setAngles(double yawDegrees, double pitchDegrees) {
         yaw = yawDegrees;
         pitch = Math.max(-24, Math.min(24, pitchDegrees));
+        lastDrag = System.currentTimeMillis();
         repaint();
     }
 
@@ -380,14 +390,16 @@ public class SkinView extends JComponent {
                     x0, y1, z1, x1, y1, z1, x0, y0, z1, x1, y0, z1);
             add(faces, skin, texel, u + 2 * d + w, v + d, w, h, 0, 0, -1,
                     x1, y1, z0, x0, y1, z0, x1, y0, z0, x0, y0, z0);
+            // левая сторона текстуры = передняя грань (стандарт Minecraft)
             add(faces, skin, texel, u, v + d, d, h, -1, 0, 0,
-                    x0, y1, z1, x0, y1, z0, x0, y0, z1, x0, y0, z0);
+                    x0, y1, z0, x0, y1, z1, x0, y0, z0, x0, y0, z1);
             add(faces, skin, texel, u + d + w, v + d, d, h, 1, 0, 0,
-                    x1, y1, z0, x1, y1, z1, x1, y0, z0, x1, y0, z1);
+                    x1, y1, z1, x1, y1, z0, x1, y0, z1, x1, y0, z0);
             add(faces, skin, texel, u + d, v, w, d, 0, 1, 0,
                     x0, y1, z0, x1, y1, z0, x0, y1, z1, x1, y1, z1);
+            // низ: верх текстуры — задняя кромка, низ — передняя
             add(faces, skin, texel, u + d + w, v, w, d, 0, -1, 0,
-                    x0, y0, z1, x1, y0, z1, x0, y0, z0, x1, y0, z0);
+                    x0, y0, z0, x1, y0, z0, x0, y0, z1, x1, y0, z1);
         }
     }
 

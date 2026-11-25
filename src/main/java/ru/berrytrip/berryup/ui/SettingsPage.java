@@ -55,6 +55,10 @@ public class SettingsPage extends JPanel {
         gc.fill = GridBagConstraints.BOTH;
         gc.insets = new Insets(0, 0, 0, 12);
 
+        JPanel leftColumn = new JPanel();
+        leftColumn.setOpaque(false);
+        leftColumn.setLayout(new BoxLayout(leftColumn, BoxLayout.Y_AXIS));
+
         // ---------------------------------------------------------- моды
         Widgets.Card mods = new Widgets.Card();
         mods.setLayout(new BoxLayout(mods, BoxLayout.Y_AXIS));
@@ -92,10 +96,13 @@ public class SettingsPage extends JPanel {
         mods.add(Box.createVerticalGlue());
 
         mods.setMinimumSize(new Dimension(340, 300));
+        mods.setMaximumSize(new Dimension(Integer.MAX_VALUE, 350));
+        leftColumn.add(mods);
+        leftColumn.add(Widgets.vgap(10));
         gc.gridx = 0;
         gc.weightx = 0.5;
         gc.weighty = 1;
-        columns.add(mods, gc);
+        columns.add(leftColumn, gc);
 
         // ---------------------------------------------------------- правая колонка
         JPanel right = new JPanel();
@@ -123,9 +130,9 @@ public class SettingsPage extends JPanel {
             applyTweaks(value ? "Шейдеры включены" : "Шейдеры выключены");
         });
         gfx.add(shaders);
-        gfx.setMaximumSize(new Dimension(Integer.MAX_VALUE, 172));
+        gfx.setMaximumSize(new Dimension(Integer.MAX_VALUE, 132));
         right.add(gfx);
-        right.add(Widgets.vgap(12));
+        right.add(Widgets.vgap(8));
 
         // ---------------------------------------------------------- память
         totalRam = Math.max(8, Ram.gb());
@@ -173,14 +180,14 @@ public class SettingsPage extends JPanel {
         });
         applyRow.add(apply, BorderLayout.EAST);
         memory.add(applyRow);
-        memory.setMaximumSize(new Dimension(Integer.MAX_VALUE, 172));
+        memory.setMaximumSize(new Dimension(Integer.MAX_VALUE, 138));
         right.add(memory);
-        right.add(Widgets.vgap(12));
+        right.add(Widgets.vgap(8));
 
         // ---------------------------------------------------------- лаунчер
         Widgets.Card behaviour = new Widgets.Card();
         behaviour.setLayout(new BoxLayout(behaviour, BoxLayout.Y_AXIS));
-        behaviour.pad(14, 16, 14, 16);
+        behaviour.pad(10, 16, 10, 16);
         behaviour.add(leftAligned(Widgets.caption("ЛАУНЧЕР", Palette.SURFACE)));
         behaviour.add(Widgets.vgap(6));
 
@@ -238,24 +245,18 @@ public class SettingsPage extends JPanel {
         });
         behaviour.add(minimize);
 
-        JPanel shortcutRow = new JPanel(new BorderLayout(8, 0));
-        shortcutRow.setOpaque(false);
-        shortcutRow.setAlignmentX(LEFT_ALIGNMENT);
-        shortcutRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        shortcutRow.add(Widgets.label("рабочий стол и меню «Пуск»", Palette.reg(8f), Palette.DIM),
-                BorderLayout.CENTER);
+        JPanel setupRow = new JPanel(new BorderLayout(8, 0));
+        setupRow.setOpaque(false);
+        setupRow.setAlignmentX(LEFT_ALIGNMENT);
+        setupRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         Widgets.BerryButton shortcut = new Widgets.BerryButton("Создать ярлык", Widgets.BerryButton.Kind.SECONDARY);
         shortcut.setToolTipText("Пересоздать ярлык BerryUp — запуск сразу правильной Java из Prism, без чёрного окна.");
         shortcut.addActionListener(e -> host.makeShortcut());
-        shortcutRow.add(shortcut, BorderLayout.EAST);
-        behaviour.add(Widgets.vgap(6));
-        behaviour.add(shortcutRow);
+        setupRow.add(shortcut, BorderLayout.WEST);
 
-        JPanel scaleRow = new JPanel(new BorderLayout(8, 0));
-        scaleRow.setOpaque(false);
-        scaleRow.setAlignmentX(LEFT_ALIGNMENT);
-        scaleRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        scaleRow.add(Widgets.label("масштаб интерфейса", Palette.reg(8.5f), Palette.FG), BorderLayout.WEST);
+        JPanel scaleWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        scaleWrap.setOpaque(false);
+        scaleWrap.add(Widgets.label("масштаб", Palette.reg(8f), Palette.DIM));
         scaleBox = new javax.swing.JComboBox<String>(new String[]{
                 "как в системе", "100%", "125%", "150%", "175%", "200%"});
         scaleBox.setFont(Palette.reg(9f));
@@ -273,10 +274,11 @@ public class SettingsPage extends JPanel {
             if (value.equals(Store.get("ui.scale", ""))) return;
             host.applyUiScale(value);
         });
-        scaleRow.add(scaleBox, BorderLayout.EAST);
-        behaviour.add(Widgets.vgap(6));
-        behaviour.add(scaleRow);
-        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 500));
+        scaleWrap.add(scaleBox);
+        setupRow.add(scaleWrap, BorderLayout.EAST);
+        behaviour.add(Widgets.vgap(4));
+        behaviour.add(setupRow);
+        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 330));
         right.add(behaviour);
         right.add(Box.createVerticalGlue());
 
@@ -289,8 +291,10 @@ public class SettingsPage extends JPanel {
 
         // ---------------------------------------------------------- журнал
         Widgets.Card logCard = new Widgets.Card(new BorderLayout());
-        logCard.pad(12, 16, 12, 16);
-        logCard.setPreferredSize(new Dimension(100, 230));
+        logCard.pad(10, 14, 10, 14);
+        logCard.setAlignmentX(LEFT_ALIGNMENT);
+        logCard.setPreferredSize(new Dimension(100, 180));
+        logCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
 
         JPanel logHead = new JPanel(new BorderLayout());
         logHead.setOpaque(false);
@@ -339,15 +343,9 @@ public class SettingsPage extends JPanel {
         logScroll.getVerticalScrollBar().setUnitIncrement(18);
         logCard.add(logScroll, BorderLayout.CENTER);
 
-        page.add(logCard, BorderLayout.SOUTH);
-
-        JScrollPane scroll = new JScrollPane(page);
-        scroll.setBorder(null);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.getVerticalScrollBar().setUnitIncrement(24);
-        add(scroll, BorderLayout.CENTER);
+        leftColumn.add(logCard);
+        leftColumn.add(Box.createVerticalGlue());
+        add(page, BorderLayout.CENTER);
 
         updateMemoryLabel();
         logArea.setText("");

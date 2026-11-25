@@ -123,7 +123,7 @@ public final class Palette {
 
     private static Font pixel(Font base, float size) {
         // Monocraft шире обычных шрифтов, поэтому кегль уменьшаем и держим целым
-        float px = Math.max(10f, Math.round(size * 0.82f));
+        float px = Math.max(10f, Math.round(size * 0.88f));
         String key = (base == PIXEL_SEMI ? "s|" : "r|") + px;
         synchronized (FONTS) {
             Font cached = FONTS.get(key);

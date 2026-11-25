@@ -430,8 +430,8 @@ public final class Widgets {
             setOpaque(false);
             setFocusable(true);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setPreferredSize(new Dimension(260, hint == null || hint.isEmpty() ? 36 : 44));
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, hint == null || hint.isEmpty() ? 36 : 44));
+            setPreferredSize(new Dimension(260, hint == null || hint.isEmpty() ? 34 : 40));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, hint == null || hint.isEmpty() ? 34 : 40));
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {

@@ -58,14 +58,14 @@ public class AccountPage extends JPanel {
     public AccountPage(MainFrame host) {
         this.host = host;
         setOpaque(false);
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setLayout(new BorderLayout(14, 0));
 
         // ---------------------------------------------------------- вход
         Widgets.Card loginCard = new Widgets.Card();
         loginCard.setAlignmentX(LEFT_ALIGNMENT);
         loginCard.setLayout(new BoxLayout(loginCard, BoxLayout.Y_AXIS));
-        loginCard.pad(20, 22, 18, 22);
-        loginCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 330));
+        loginCard.pad(18, 20, 16, 20);
+        loginCard.setPreferredSize(new Dimension(360, 560));
 
         JPanel loginHead = new JPanel(new BorderLayout());
         loginHead.setOpaque(false);
@@ -154,23 +154,18 @@ public class AccountPage extends JPanel {
         loginCard.add(actions);
 
         JLabel fine = Widgets.label(
-                "Ссылку из бота никому не пересылай: она пускает в игру под твоим ником.",
+                "Ссылку из бота никому не пересылай.",
                 Palette.reg(8.2f), Palette.DIM);
         fine.setAlignmentX(LEFT_ALIGNMENT);
         loginCard.add(Box.createVerticalStrut(4));
         loginCard.add(fine);
 
-        add(loginCard);
-        add(Box.createVerticalStrut(14));
-
         // ---------------------------------------------------------- внешний вид
         Widgets.Card lookCard = new Widgets.Card();
         lookCard.setAlignmentX(LEFT_ALIGNMENT);
         lookCard.setLayout(new BorderLayout(20, 14));
-        lookCard.pad(20, 22, 18, 22);
-        lookCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 470));
-        lookCard.setMinimumSize(new Dimension(0, 390));
-        lookCard.setPreferredSize(new Dimension(600, 390));
+        lookCard.pad(18, 20, 16, 20);
+        lookCard.setPreferredSize(new Dimension(480, 560));
 
         JPanel lookHead = new JPanel(new BorderLayout());
         lookHead.setOpaque(false);
@@ -206,25 +201,30 @@ public class AccountPage extends JPanel {
         slots.add(Box.createVerticalStrut(2));
         slots.add(left(skinMeta));
         slots.add(Box.createVerticalStrut(8));
-        JPanel skinButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel skinButtons = new JPanel();
         skinButtons.setOpaque(false);
+        skinButtons.setLayout(new BoxLayout(skinButtons, BoxLayout.Y_AXIS));
         skinButtons.setAlignmentX(LEFT_ALIGNMENT);
-        skinButtons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         Widgets.BerryButton pickSkin = new Widgets.BerryButton("Выбрать файл", Widgets.BerryButton.Kind.SECONDARY);
+        pickSkin.setAlignmentX(LEFT_ALIGNMENT);
+        pickSkin.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         pickSkin.addActionListener(e -> choose(false));
         applySkin = new Widgets.BerryButton("Применить скин", Widgets.BerryButton.Kind.PRIMARY);
+        applySkin.setAlignmentX(LEFT_ALIGNMENT);
+        applySkin.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         applySkin.setEnabled(false);
         applySkin.addActionListener(e -> apply(false));
         skinButtons.add(pickSkin);
+        skinButtons.add(Box.createVerticalStrut(5));
         skinButtons.add(applySkin);
         slots.add(skinButtons);
 
-        slots.add(Box.createVerticalStrut(14));
+        slots.add(Box.createVerticalStrut(10));
         JSeparator line = new JSeparator();
         line.setForeground(Palette.LINE);
         line.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
         slots.add(line);
-        slots.add(Box.createVerticalStrut(14));
+        slots.add(Box.createVerticalStrut(10));
 
         slots.add(Widgets.caption("ПЛАЩ", Palette.SURFACE));
         slots.add(Box.createVerticalStrut(4));
@@ -232,30 +232,37 @@ public class AccountPage extends JPanel {
         slots.add(Box.createVerticalStrut(2));
         slots.add(left(capeMeta));
         slots.add(Box.createVerticalStrut(8));
-        JPanel capeButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel capeButtons = new JPanel();
         capeButtons.setOpaque(false);
+        capeButtons.setLayout(new BoxLayout(capeButtons, BoxLayout.Y_AXIS));
         capeButtons.setAlignmentX(LEFT_ALIGNMENT);
-        capeButtons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         Widgets.BerryButton pickCape = new Widgets.BerryButton("Выбрать файл", Widgets.BerryButton.Kind.SECONDARY);
+        pickCape.setAlignmentX(LEFT_ALIGNMENT);
+        pickCape.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         pickCape.addActionListener(e -> choose(true));
         applyCape = new Widgets.BerryButton("Применить плащ", Widgets.BerryButton.Kind.PRIMARY);
+        applyCape.setAlignmentX(LEFT_ALIGNMENT);
+        applyCape.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         applyCape.setEnabled(false);
         applyCape.addActionListener(e -> apply(true));
         clearCape = new Widgets.BerryButton("Снять", Widgets.BerryButton.Kind.GHOST);
+        clearCape.setAlignmentX(LEFT_ALIGNMENT);
+        clearCape.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         clearCape.addActionListener(e -> removeCape());
         capeButtons.add(pickCape);
+        capeButtons.add(Box.createVerticalStrut(5));
         capeButtons.add(applyCape);
+        capeButtons.add(Box.createVerticalStrut(5));
         capeButtons.add(clearCape);
         slots.add(capeButtons);
 
         slots.add(Box.createVerticalStrut(10));
         JTextArea note = Widgets.paragraph(
-                "Файлы кладутся прямо в пул QuickSkin: скин — в quickskin/uploads/skins, "
-                        + "плащ — в quickskin/uploads/capes. Перетащи PNG или GIF в карточку — "
+                "Файлы — сразу в пул QuickSkin: skins и capes. Перетащи PNG/GIF в карточку — "
                         + "лаунчер сам поймёт, скин это или плащ.",
-                Palette.reg(8.6f), Palette.DIM);
+                Palette.reg(8.4f), Palette.DIM);
         note.setAlignmentX(LEFT_ALIGNMENT);
-        note.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        note.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
         slots.add(note);
 
         lookCard.add(slots, BorderLayout.CENTER);
@@ -291,8 +298,8 @@ public class AccountPage extends JPanel {
         };
         installDrop(lookCard, drop);
 
-        add(lookCard);
-        add(Box.createVerticalGlue());
+        add(loginCard, BorderLayout.WEST);
+        add(lookCard, BorderLayout.CENTER);
 
         loadExisting();
         refresh();

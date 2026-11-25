@@ -216,8 +216,9 @@ public final class Main {
         if (!dir.isDirectory() && !dir.mkdirs()) return 2;
         System.setProperty("berryup.render", "1");
         Store.load();
-        boolean dark = "dark".equals(System.getProperty("berryup.render.theme"))
-                || Store.getBool("theme.dark", false);
+        String theme = System.getProperty("berryup.render.theme", "");
+        boolean dark = "dark".equals(theme)
+                || (theme.isEmpty() && Store.getBool("theme.dark", false));
         Palette.applyTheme(dark);
         setupLook(dark);
 

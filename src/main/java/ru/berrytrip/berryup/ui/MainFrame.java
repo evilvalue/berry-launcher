@@ -43,6 +43,8 @@ import java.io.File;
 /** Главное окно BerryUp: слева запуск и сервер, справа вкладки. */
 public class MainFrame extends JFrame {
 
+    private static final double ASPECT = 3.0 / 2.0;
+
     private static final String[] PAGE_NAMES = {"home", "account", "settings", "diag", "about"};
     private static final String[] PAGE_TITLES = {"Главное", "Аккаунт", "Настройки", "Диагностика", "О программе"};
     private static final String[] PAGE_SUBS = {
@@ -58,8 +60,7 @@ public class MainFrame extends JFrame {
     private final Widgets.Segmented nav;
     private final CardLayout pageLayout = new CardLayout();
     private final JPanel pages = new JPanel(pageLayout);
-    private final java.util.Map<String, javax.swing.JScrollPane> pageScrolls =
-            new java.util.HashMap<String, javax.swing.JScrollPane>();
+    private boolean ratioGuard;
     private final HomePage home;
     private final AccountPage account;
     private final SettingsPage settings;
@@ -86,17 +87,42 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         Store.load();
         Tweaks.load();
-        // Окно не должно вылезать за экран: на ноутбуке с масштабом 125–150%
-        // логическое разрешение меньше прежних 1060×700, и низ обрезался.
+        // Окно живёт в фиксированном соотношении 3:2 и только растёт — без прокрутки страниц.
         java.awt.Rectangle usable = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
                 .getMaximumWindowBounds();
-        int minWidth = Math.min(1020, Math.max(720, usable.width - 60));
-        int minHeight = Math.min(640, Math.max(500, usable.height - 60));
-        setMinimumSize(new Dimension(minWidth, minHeight));
-        int width = Math.max(minWidth, Math.min(Store.getInt("width", 1280), Math.max(minWidth, usable.width - 40)));
-        int height = Math.max(minHeight, Math.min(Store.getInt("height", 840), Math.max(minHeight, usable.height - 40)));
+        int maxWidth = Math.max(960, usable.width - 60);
+        int maxHeight = Math.max(640, usable.height - 60);
+        int baseWidth = Math.min(1280, maxWidth);
+        int baseHeight = (int) Math.round(baseWidth / ASPECT);
+        if (baseHeight > maxHeight) {
+            baseHeight = maxHeight;
+            baseWidth = (int) Math.round(baseHeight * ASPECT);
+        }
+        setMinimumSize(new Dimension(baseWidth, baseHeight));
+        int width = Math.max(baseWidth, Math.min(Store.getInt("width", baseWidth), maxWidth));
+        int height = (int) Math.round(width / ASPECT);
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = (int) Math.round(height * ASPECT);
+        }
         setSize(width, height);
         setLocationRelativeTo(null);
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent event) {
+                if (ratioGuard) return;
+                if ((getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH) != 0) return;
+                int current = getWidth();
+                int wanted = (int) Math.round(current / ASPECT);
+                if (Math.abs(getHeight() - wanted) <= 1) return;
+                ratioGuard = true;
+                try {
+                    setSize(current, wanted);
+                } finally {
+                    ratioGuard = false;
+                }
+            }
+        });
         try {
             java.awt.Image icon = javax.imageio.ImageIO.read(MainFrame.class.getResourceAsStream("/berry.png"));
             if (icon != null) setIconImage(icon);
@@ -327,14 +353,11 @@ public class MainFrame extends JFrame {
 
         pages.setOpaque(false);
         pages.setBorder(BorderFactory.createEmptyBorder(14, 2, 0, 2));
-        pageScrolls.put(PAGE_NAMES[0], Widgets.scroll(home));
-        pageScrolls.put(PAGE_NAMES[1], Widgets.scroll(account));
-        pageScrolls.put(PAGE_NAMES[3], Widgets.scroll(diag));
-        pageScrolls.put(PAGE_NAMES[4], Widgets.scroll(about));
-        for (int i = 0; i < PAGE_NAMES.length; i++) {
-            if (i == 2) pages.add(settings, PAGE_NAMES[2]); // у «Настроек» своя прокрутка
-            else pages.add(pageScrolls.get(PAGE_NAMES[i]), PAGE_NAMES[i]);
-        }
+        pages.add(home, PAGE_NAMES[0]);
+        pages.add(account, PAGE_NAMES[1]);
+        pages.add(settings, PAGE_NAMES[2]);
+        pages.add(diag, PAGE_NAMES[3]);
+        pages.add(about, PAGE_NAMES[4]);
 
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
@@ -445,11 +468,6 @@ public class MainFrame extends JFrame {
         pageLayout.show(pages, PAGE_NAMES[safe]);
         pageTitle.setText(PAGE_TITLES[safe]);
         pageSub.setText(PAGE_SUBS[safe]);
-        javax.swing.JScrollPane scroller = pageScrolls.get(PAGE_NAMES[safe]);
-        if (scroller != null) {
-            // сфокусированное поле не должно оставлять страницу промотанной вниз
-            SwingUtilities.invokeLater(() -> scroller.getVerticalScrollBar().setValue(0));
-        }
         if (safe == 1) account.refresh();
         if (safe == 3) diag.refresh();
     }
