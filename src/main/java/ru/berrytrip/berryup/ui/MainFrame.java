@@ -81,39 +81,43 @@ public class MainFrame extends JFrame {
         }
         prism = Prism.find();
 
-        JPanel root = new JPanel(new BorderLayout(0, 0));
-        root.setBackground(Palette.BG);
-        root.setBorder(BorderFactory.createEmptyBorder(16, 16, 12, 16));
+        Widgets.Backdrop root = new Widgets.Backdrop(new BorderLayout(0, 0));
+        root.setBorder(BorderFactory.createEmptyBorder(18, 18, 14, 18));
         setContentPane(root);
 
         // ---------------------------------------------------------- боковая панель
         JPanel side = new JPanel();
         side.setOpaque(false);
         side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
-        side.setPreferredSize(new Dimension(348, 100));
-        side.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 16));
+        side.setPreferredSize(new Dimension(360, 100));
+        side.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 18));
 
-        JPanel hero = new JPanel(new BorderLayout(12, 0));
-        hero.setOpaque(false);
+        Widgets.Card hero = new Widgets.Card();
         hero.setAlignmentX(LEFT_ALIGNMENT);
-        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 64));
+        hero.setLayout(new BorderLayout(13, 0));
+        hero.pad(14, 16, 14, 16);
+        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 88));
         hero.add(new Widgets.Logo(54), BorderLayout.WEST);
         JPanel heroText = new JPanel();
         heroText.setOpaque(false);
         heroText.setLayout(new BoxLayout(heroText, BoxLayout.Y_AXIS));
         heroText.add(Widgets.label(Cfg.BUILD, Palette.semi(21f), Palette.FG));
-        JLabel heroSub = Widgets.label("BerryUp " + Cfg.VERSION + "  ·  " + Cfg.LOADER, Palette.reg(8.5f), Palette.MUTED);
+        JLabel heroSub = Widgets.label("Minecraft " + Cfg.MC_VERSION + "  ·  " + Cfg.LOADER, Palette.reg(8.4f), Palette.MUTED);
         heroSub.setAlignmentX(LEFT_ALIGNMENT);
-        heroText.add(Box.createVerticalStrut(2));
+        heroText.add(Box.createVerticalStrut(3));
         heroText.add(heroSub);
+        JLabel heroVer = Widgets.label("BerryUp " + Cfg.VERSION, Palette.semi(8.2f), Palette.ACCENT_HOVER);
+        heroVer.setAlignmentX(LEFT_ALIGNMENT);
+        heroText.add(Box.createVerticalStrut(2));
+        heroText.add(heroVer);
         hero.add(heroText, BorderLayout.CENTER);
         side.add(hero);
-        side.add(Box.createVerticalStrut(16));
+        side.add(Box.createVerticalStrut(14));
 
         playButton = new Widgets.BerryButton("Играть", Widgets.BerryButton.Kind.PRIMARY);
         playButton.setAlignmentX(LEFT_ALIGNMENT);
-        playButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-        playButton.setFont(Palette.semi(10.5f));
+        playButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        playButton.setFont(Palette.semi(11.5f));
         playButton.addActionListener(e -> play(false));
         side.add(playButton);
         side.add(Box.createVerticalStrut(8));
@@ -129,8 +133,8 @@ public class MainFrame extends JFrame {
         Widgets.Card serverCard = new Widgets.Card();
         serverCard.setAlignmentX(LEFT_ALIGNMENT);
         serverCard.setLayout(new BoxLayout(serverCard, BoxLayout.Y_AXIS));
-        serverCard.pad(14, 16, 14, 16);
-        serverCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 206));
+        serverCard.pad(15, 16, 15, 16);
+        serverCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 214));
         serverCard.add(Widgets.caption("СЕРВЕР", Palette.SURFACE));
         serverCard.add(Box.createVerticalStrut(8));
 
@@ -214,6 +218,7 @@ public class MainFrame extends JFrame {
         // ---------------------------------------------------------- правая часть
         nav = new Widgets.Segmented("Главное", "Настройки", "Диагностика", "О программе");
         nav.onSelect(this::showPage);
+        nav.setAlignmentX(LEFT_ALIGNMENT);
 
         banner = new Banner();
 
@@ -238,7 +243,7 @@ public class MainFrame extends JFrame {
         about = new AboutPage(this);
 
         pages.setOpaque(false);
-        pages.setBorder(BorderFactory.createEmptyBorder(14, 2, 0, 2));
+        pages.setBorder(BorderFactory.createEmptyBorder(16, 2, 0, 2));
         pages.add(home, PAGE_NAMES[0]);
         pages.add(settings, PAGE_NAMES[1]);
         pages.add(diag, PAGE_NAMES[2]);

@@ -26,7 +26,7 @@ public class AboutPage extends JPanel {
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
         card.pad(18, 20, 18, 20);
         card.setAlignmentX(LEFT_ALIGNMENT);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 240));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 320));
 
         JLabel title = Widgets.label("BerryUp " + Cfg.VERSION, Palette.semi(15f), Palette.FG);
         title.setAlignmentX(LEFT_ALIGNMENT);
@@ -39,15 +39,15 @@ public class AboutPage extends JPanel {
         card.add(sub);
         card.add(Box.createVerticalStrut(14));
 
-        JLabel caption = Widgets.label("ЧТО НОВОГО В 3.1", Palette.semi(8f), Palette.DIM);
+        JLabel caption = Widgets.label("ЧТО НОВОГО В 3.2", Palette.semi(8f), Palette.DIM);
         caption.setAlignmentX(LEFT_ALIGNMENT);
         card.add(caption);
         card.add(Box.createVerticalStrut(6));
 
-        String notes = "BerryUp — это один файл BerryUp.jar: ни установщика, ни архива, ни скриптов рядом.\n"
+        String notes = "Новый дизайн окна и иконка: ягодный градиент, объёмные карточки, аккуратная навигация.\n"
+                + "BerryUp по-прежнему один файл BerryUp.jar: ни установщика, ни архива, ни скриптов рядом.\n"
                 + "Сборка и Prism Launcher остаются на месте: BerryUp находит инстанс, обновляет его и запускает\n"
-                + "игру. Prism или PineconeMC нужно поставить один раз — ссылки ниже и на сайте сборки.\n"
-                + "Обновления BerryUp применяет сам: скачивает новый jar и подменяет свой файл при перезапуске.";
+                + "игру. Обновления BerryUp применяет сам — скачивает новый jar и подменяет файл при перезапуске.";
         JLabel notesLabel = Widgets.label("<html><div style='width:520px'>" + notes.replace("\n", "<br>") + "</div></html>",
                 Palette.reg(8.8f), Palette.MUTED);
         notesLabel.setAlignmentX(LEFT_ALIGNMENT);

@@ -2,31 +2,40 @@ package ru.berrytrip.berryup.ui;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.GradientPaint;
 import java.awt.Graphics2D;
-import java.awt.Shape;
+import java.awt.LinearGradientPaint;
+import java.awt.Paint;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.geom.RoundRectangle2D;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Палитра BerryUp: тёмный фон, розовый акцент и общие радиусы скругления. */
+/** Палитра BerryUp: глубокий тёмный фон, ягодный градиент и общие радиусы скругления. */
 public final class Palette {
 
-    public static final Color BG = new Color(13, 14, 18);
-    public static final Color SURFACE = new Color(22, 24, 30);
-    public static final Color SURFACE_ALT = new Color(28, 31, 39);
-    public static final Color HOVER = new Color(36, 40, 50);
-    public static final Color LINE = new Color(41, 45, 56);
-    public static final Color FG = new Color(236, 239, 245);
-    public static final Color MUTED = new Color(147, 156, 172);
-    public static final Color DIM = new Color(104, 113, 129);
-    public static final Color ACCENT = new Color(233, 84, 120);
-    public static final Color ACCENT_HOVER = new Color(246, 112, 144);
-    public static final Color ACCENT_DEEP = new Color(188, 51, 85);
-    public static final Color OK = new Color(74, 222, 128);
-    public static final Color WARN = new Color(250, 191, 36);
-    public static final Color ERR = new Color(248, 113, 113);
+    public static final Color BG = new Color(8, 9, 14);
+    public static final Color BG_SOFT = new Color(11, 13, 19);
+    public static final Color SURFACE = new Color(18, 21, 29);
+    public static final Color SURFACE_ALT = new Color(24, 28, 38);
+    public static final Color HOVER = new Color(34, 39, 53);
+    public static final Color LINE = new Color(38, 43, 57);
+    public static final Color FG = new Color(243, 245, 251);
+    public static final Color MUTED = new Color(154, 163, 184);
+    public static final Color DIM = new Color(108, 116, 136);
+    public static final Color ACCENT = new Color(255, 77, 125);
+    public static final Color ACCENT_HOVER = new Color(255, 112, 151);
+    public static final Color ACCENT_DEEP = new Color(214, 47, 94);
+    public static final Color ACCENT_2 = new Color(255, 145, 96);
+    public static final Color VIOLET = new Color(139, 92, 246);
+    public static final Color OK = new Color(72, 224, 164);
+    public static final Color WARN = new Color(255, 194, 87);
+    public static final Color ERR = new Color(255, 107, 122);
     public static final Color TELEGRAM = new Color(42, 171, 238);
+
+    /** Текст на ярком ягодном градиенте. */
+    public static final Color ON_ACCENT = new Color(26, 7, 13);
 
     private static final Map<String, Font> FONTS = new HashMap<String, Font>();
 
@@ -39,6 +48,10 @@ public final class Palette {
 
     public static Font semi(float size) {
         return font("Segoe UI Semibold", Font.PLAIN, size);
+    }
+
+    public static Font bold(float size) {
+        return font("Segoe UI", Font.BOLD, size);
     }
 
     public static Font mono(float size) {
@@ -59,12 +72,38 @@ public final class Palette {
         }
     }
 
+    /** Основной ягодный градиент для кнопок и акцентных элементов. */
+    public static Paint accentGradient(float x, float y, float w, float h) {
+        float end = Math.max(1f, w);
+        float down = Math.max(1f, h);
+        return new LinearGradientPaint(x, y, x + end, y + down,
+                new float[]{0f, 0.55f, 1f},
+                new Color[]{ACCENT, new Color(255, 118, 132), ACCENT_2});
+    }
+
+    /** Мягкий вертикальный градиент карточки. */
+    public static Paint cardGradient(int w, int h) {
+        return new GradientPaint(0, 0, mix(SURFACE, Color.WHITE, 0.028f), 0, Math.max(1, h), SURFACE);
+    }
+
+    /** Фон окна: два цветных свечения по краям поверх почти чёрного. */
+    public static Paint backdrop(int w, int h) {
+        return new LinearGradientPaint(0, 0, Math.max(1, w), Math.max(1, h),
+                new float[]{0f, 0.5f, 1f},
+                new Color[]{mix(BG, VIOLET, 0.07f), BG, mix(BG, ACCENT, 0.06f)});
+    }
+
     public static Shape round(int x, int y, int w, int h, int radius) {
         return new RoundRectangle2D.Float(x, y, w, h, radius * 2, radius * 2);
     }
 
     public static void fillRound(Graphics2D g, int x, int y, int w, int h, int radius, Color color) {
         g.setColor(color);
+        g.fill(round(x, y, w, h, radius));
+    }
+
+    public static void fillRound(Graphics2D g, int x, int y, int w, int h, int radius, Paint paint) {
+        g.setPaint(paint);
         g.fill(round(x, y, w, h, radius));
     }
 
@@ -78,6 +117,7 @@ public final class Palette {
         copy.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         copy.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         copy.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        copy.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
         return copy;
     }
 

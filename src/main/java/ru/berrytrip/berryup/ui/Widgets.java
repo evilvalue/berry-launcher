@@ -86,7 +86,7 @@ public final class Widgets {
 
         public Card(LayoutManager layout) {
             super(layout);
-            radius = 16;
+            radius = 18;
             setOpaque(false);
         }
 
@@ -106,13 +106,38 @@ public final class Widgets {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, radius, Palette.SURFACE);
+            Palette.fillRound(g, 0, 0, w, h, radius, Palette.cardGradient(w, h));
             if (outline) {
                 g.setStroke(new BasicStroke(1f));
                 Palette.strokeRound(g, 0, 0, w - 1, h - 1, radius, Palette.LINE);
+                // тонкая световая кромка сверху: карточка выглядит объёмнее
+                g.setColor(Palette.alpha(Color.WHITE, 14));
+                g.drawLine(radius, 0, Math.max(radius, w - radius), 0);
             }
             g.dispose();
             super.paintComponent(graphics);
+        }
+    }
+
+    /** Фон всего окна: тёмный градиент со свечением по краям. */
+    public static class Backdrop extends JPanel {
+        public Backdrop(LayoutManager layout) {
+            super(layout);
+            setOpaque(true);
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            // сначала родная заливка (панель непрозрачная), затем градиент поверх неё
+            super.paintComponent(graphics);
+            Graphics2D g = Palette.quality(graphics);
+            int w = getWidth();
+            int h = getHeight();
+            g.setPaint(Palette.backdrop(w, h));
+            g.fillRect(0, 0, w, h);
+            glow(g, w - 40, 0, 430, Palette.ACCENT, 34);
+            glow(g, -30, h + 40, 360, Palette.VIOLET, 26);
+            g.dispose();
         }
     }
 
@@ -187,8 +212,8 @@ public final class Widgets {
         @Override
         public Dimension getPreferredSize() {
             Dimension size = super.getPreferredSize();
-            int extra = kind == Kind.NAV ? 26 : 30;
-            return new Dimension(size.width + extra, Math.max(kind == Kind.NAV ? 36 : 34, size.height + 10));
+            int extra = kind == Kind.NAV ? 28 : 36;
+            return new Dimension(size.width + extra, Math.max(kind == Kind.NAV ? 36 : 38, size.height + 12));
         }
 
         @Override
@@ -204,7 +229,7 @@ public final class Widgets {
             switch (kind) {
                 case PRIMARY:
                     fill = pressed ? Palette.ACCENT_DEEP : (hover && enabled ? Palette.ACCENT_HOVER : Palette.ACCENT);
-                    text = Color.WHITE;
+                    text = Palette.ON_ACCENT;
                     break;
                 case SECONDARY:
                     fill = hover && enabled ? Palette.HOVER : Palette.SURFACE_ALT;
@@ -216,10 +241,10 @@ public final class Widgets {
                     break;
                 case NAV:
                     if (isSelected()) {
-                        fill = Palette.SURFACE_ALT;
-                        text = Palette.FG;
+                        fill = Palette.alpha(Palette.ACCENT, 26);
+                        text = Palette.ACCENT_HOVER;
                     } else {
-                        fill = hover ? Palette.SURFACE_ALT : null;
+                        fill = hover ? Palette.alpha(Color.WHITE, 12) : null;
                         text = hover ? Palette.FG : Palette.MUTED;
                     }
                     break;
@@ -235,18 +260,27 @@ public final class Widgets {
                 if (fill != null) fill = Palette.SURFACE_ALT;
             }
 
+            int radius = kind == Kind.NAV ? 9 : 12;
+            if (kind == Kind.PRIMARY && enabled) {
+                Palette.fillRound(g, 1, 2, w - 2, h - 2, radius, Palette.alpha(Palette.ACCENT, 46));
+            }
+
             if (fill != null) {
-                Palette.fillRound(g, 0, 0, w, h, 10, fill);
+                if (kind == Kind.PRIMARY && enabled && !pressed) {
+                    Palette.fillRound(g, 0, 0, w, h - 2, radius, Palette.accentGradient(0, 0, w, h));
+                } else {
+                    Palette.fillRound(g, 0, 0, w, Math.max(1, h - (kind == Kind.PRIMARY ? 2 : 0)), radius, fill);
+                }
                 if (kind == Kind.SECONDARY || kind == Kind.DANGER) {
                     g.setStroke(new BasicStroke(1f));
-                    Palette.strokeRound(g, 0, 0, w - 1, h - 1, 10,
+                    Palette.strokeRound(g, 0, 0, w - 1, h - 1, radius,
                             kind == Kind.DANGER ? new Color(88, 40, 52) : Palette.LINE);
                 }
             }
 
             if (isFocusOwner()) {
                 g.setStroke(new BasicStroke(1.2f));
-                Palette.strokeRound(g, 1, 1, w - 3, h - 3, 10, Palette.alpha(Palette.ACCENT, 150));
+                Palette.strokeRound(g, 1, 1, w - 3, h - 3, radius, Palette.alpha(Palette.ACCENT, 150));
             }
 
             Font font = getFont();
@@ -255,7 +289,7 @@ public final class Widgets {
             java.awt.FontMetrics metrics = g.getFontMetrics();
             int textWidth = metrics.stringWidth(getText());
             int x = (w - textWidth) / 2;
-            int y = (h - metrics.getHeight()) / 2 + metrics.getAscent();
+            int y = (h - (kind == Kind.PRIMARY ? 2 : 0) - metrics.getHeight()) / 2 + metrics.getAscent();
             g.drawString(getText(), Math.max(6, x), y);
             g.dispose();
         }
@@ -464,16 +498,25 @@ public final class Widgets {
                 return;
             }
 
-            Palette.fillRound(g, 0, 0, w, h, 14, hover ? Palette.HOVER : Palette.SURFACE);
+            Palette.fillRound(g, 0, 0, w, h, 16, hover ? Palette.HOVER : Palette.cardGradient(w, h));
             g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 14, hover || focus ? Palette.alpha(Palette.ACCENT, 130) : Palette.LINE);
+            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 16, hover || focus ? Palette.alpha(Palette.ACCENT, 130) : Palette.LINE);
 
             int badge = 38;
             int bx = 16;
             int by = (h - badge) / 2;
-            g.setColor(glyph == Glyph.TELEGRAM ? Palette.TELEGRAM : Palette.ACCENT);
-            g.fillOval(bx, by, badge, badge);
-            g.setColor(Color.WHITE);
+            if (glyph == Glyph.TELEGRAM) {
+                Palette.fillRound(g, bx, by, badge, badge, 12, Palette.alpha(Palette.TELEGRAM, 60));
+                g.setColor(Palette.TELEGRAM);
+                g.setStroke(new BasicStroke(1f));
+                Palette.strokeRound(g, bx, by, badge, badge, 12, Palette.alpha(Palette.TELEGRAM, 110));
+            } else {
+                Palette.fillRound(g, bx, by, badge, badge, 12, Palette.alpha(Palette.ACCENT, 40));
+                g.setColor(Palette.ACCENT);
+                g.setStroke(new BasicStroke(1f));
+                Palette.strokeRound(g, bx, by, badge, badge, 12, Palette.alpha(Palette.ACCENT, 110));
+            }
+            g.setColor(glyph == Glyph.TELEGRAM ? Palette.TELEGRAM : Palette.ACCENT_HOVER);
             g.setStroke(new BasicStroke(1.7f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             int cx = bx + badge / 2;
             int cy = by + badge / 2;
@@ -534,6 +577,11 @@ public final class Widgets {
         protected void paintComponent(Graphics graphics) {
             Graphics2D g = Palette.quality(graphics);
             int size = Math.min(getWidth(), getHeight());
+            // мягкое ягодное свечение под иконкой
+            for (int i = 3; i >= 1; i--) {
+                g.setColor(Palette.alpha(Palette.ACCENT, 10));
+                g.fillOval(-i * 2, size / 6 - i * 2, size + i * 4, size + i * 4);
+            }
             if (image != null) {
                 g.drawImage(image, 0, 0, size, size, null);
             } else {
@@ -560,7 +608,8 @@ public final class Widgets {
 
         public Segmented(String... names) {
             setOpaque(false);
-            setLayout(new FlowLayout(FlowLayout.LEFT, 4, 0));
+            setLayout(new FlowLayout(FlowLayout.LEFT, 2, 0));
+            setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
             for (int i = 0; i < names.length; i++) {
                 final int index = i;
                 BerryButton button = new BerryButton(names[i], BerryButton.Kind.NAV);
@@ -587,6 +636,18 @@ public final class Widgets {
 
         public List<BerryButton> items() {
             return items;
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g = Palette.quality(graphics);
+            int w = getWidth();
+            int h = getHeight();
+            Palette.fillRound(g, 0, 0, w, h, 13, Palette.alpha(Palette.BG_SOFT, 230));
+            g.setStroke(new BasicStroke(1f));
+            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 13, Palette.LINE);
+            g.dispose();
+            super.paintComponent(graphics);
         }
     }
 
@@ -677,6 +738,15 @@ public final class Widgets {
             g.fillOval(kx, trackY - 2, knob, knob);
             g.dispose();
         }
+    }
+
+    /** Мягкое радиальное свечение без видимой границы круга. */
+    static void glow(Graphics2D g, int cx, int cy, int radius, Color color, int alpha) {
+        g.setPaint(new java.awt.RadialGradientPaint(
+                new java.awt.geom.Point2D.Float(cx, cy), Math.max(1, radius),
+                new float[]{0f, 1f},
+                new Color[]{Palette.alpha(color, alpha), Palette.alpha(color, 0)}));
+        g.fillOval(cx - radius, cy - radius, radius * 2, radius * 2);
     }
 
     static String clip(String text, Graphics2D g, int width) {
