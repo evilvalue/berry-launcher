@@ -102,7 +102,7 @@ public final class Auth {
             Store.set("auth.request.link", link);
             Store.set("auth.request.until", String.valueOf(expires));
             Store.save();
-            Sys.openUrl(link);
+            Sys.openTelegram(link);
             Log.info("Сервер выдал ссылку входа для " + clean);
             return "";
         } catch (Exception error) {
@@ -125,7 +125,7 @@ public final class Auth {
         if (link.isEmpty() || !pending()) {
             return false;
         }
-        Sys.openUrl(link);
+        Sys.openTelegram(link);
         return true;
     }
 

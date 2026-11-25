@@ -60,7 +60,6 @@ public class MainFrame extends JFrame {
     private final Widgets.Segmented nav;
     private final CardLayout pageLayout = new CardLayout();
     private final JPanel pages = new JPanel(pageLayout);
-    private boolean ratioGuard;
     private final HomePage home;
     private final AccountPage account;
     private final SettingsPage settings;
@@ -87,7 +86,7 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         Store.load();
         Tweaks.load();
-        // Окно живёт в фиксированном соотношении 3:2 и только растёт — без прокрутки страниц.
+        // Стартовый размер — 3:2; дальше окно можно свободно менять без прокрутки страниц.
         java.awt.Rectangle usable = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
                 .getMaximumWindowBounds();
         int maxWidth = Math.max(960, usable.width - 60);
@@ -107,22 +106,6 @@ public class MainFrame extends JFrame {
         }
         setSize(width, height);
         setLocationRelativeTo(null);
-        addComponentListener(new java.awt.event.ComponentAdapter() {
-            @Override
-            public void componentResized(java.awt.event.ComponentEvent event) {
-                if (ratioGuard) return;
-                if ((getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH) != 0) return;
-                int current = getWidth();
-                int wanted = (int) Math.round(current / ASPECT);
-                if (Math.abs(getHeight() - wanted) <= 1) return;
-                ratioGuard = true;
-                try {
-                    setSize(current, wanted);
-                } finally {
-                    ratioGuard = false;
-                }
-            }
-        });
         try {
             java.awt.Image icon = javax.imageio.ImageIO.read(MainFrame.class.getResourceAsStream("/berry.png"));
             if (icon != null) setIconImage(icon);

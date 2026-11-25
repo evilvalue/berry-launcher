@@ -326,6 +326,15 @@ public class AccountPage extends JPanel {
         add(loginCard, BorderLayout.WEST);
         add(lookCard, BorderLayout.CENTER);
 
+        // При изменении размера окна перерисовываем страницу целиком:
+        // иначе старый отрисованный чекбокс может остаться на прежнем месте.
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent event) {
+                repaint();
+            }
+        });
+
         loadExisting();
         refresh();
 
