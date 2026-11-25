@@ -109,6 +109,15 @@ public final class Install {
             }
             File target = jar();
             if (!source.getAbsolutePath().equalsIgnoreCase(target.getAbsolutePath())) {
+                String installedVersion = Updater.jarVersion(target);
+                if (target.isFile() && !installedVersion.isEmpty()
+                        && UpdateCheck.compare(Cfg.VERSION, installedVersion) <= 0) {
+                    // Пользователь мог запустить старый скачанный jar. Не откатываем
+                    // уже установленную новую версию: запускаем её.
+                    Log.info("Установка: оставляю установленную версию " + installedVersion
+                            + " вместо запущенной " + Cfg.VERSION);
+                    return target;
+                }
                 Files.copy(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
             writeIcon();

@@ -123,9 +123,9 @@ public final class Widgets {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, 12, Palette.mix(Palette.SURFACE, color, 0.10f));
+            Palette.fillRound(g, 0, 0, w, h, 3, Palette.mix(Palette.SURFACE, color, 0.10f));
             g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 12, Palette.alpha(color, 60));
+            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 3, Palette.alpha(color, 60));
             g.setFont(getFont());
             g.setColor(color);
             java.awt.FontMetrics metrics = g.getFontMetrics();
@@ -148,7 +148,7 @@ public final class Widgets {
 
         public Card(LayoutManager layout) {
             super(layout);
-            radius = 20;
+            radius = 6;
             setOpaque(false);
         }
 
@@ -388,7 +388,7 @@ public final class Widgets {
                 border = Palette.LINE;
             }
 
-            int radius = kind == Kind.NAV ? 11 : 12;
+            int radius = 3;
             if (fill != null) {
                 Palette.fillRound(g, 0, 0, w, h, radius, fill);
             }
@@ -408,6 +408,142 @@ public final class Widgets {
             int y = (h - metrics.getHeight()) / 2 + metrics.getAscent();
             g.drawString(getText(), Math.max(6, x), y);
             g.dispose();
+        }
+    }
+
+    /**
+     * Кнопка для тёмной hero-сцены: срезанные углы вместо скруглений,
+     * пиксельная тень и опциональная иконка Telegram.
+     */
+    public static class PixelButton extends JButton {
+        public enum Tone {PRIMARY, SECONDARY, GHOST}
+
+        private final Tone tone;
+        private boolean hover;
+        private boolean compact;
+        private boolean telegram;
+
+        public PixelButton(String text, Tone tone) {
+            super(text);
+            this.tone = tone;
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
+            setRolloverEnabled(true);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setFont(Palette.semi(10.5f));
+            setForeground(Color.WHITE);
+            setMargin(new java.awt.Insets(0, 0, 0, 0));
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hover = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hover = false;
+                    repaint();
+                }
+            });
+        }
+
+        public PixelButton telegram() {
+            telegram = true;
+            return this;
+        }
+
+        public PixelButton compact() {
+            compact = true;
+            return this;
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Dimension size = super.getPreferredSize();
+            return new Dimension(size.width + 36, compact ? 38 : 50);
+        }
+
+        @Override
+        public Dimension getMaximumSize() {
+            return new Dimension(Integer.MAX_VALUE, compact ? 38 : 50);
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g = Palette.quality(graphics);
+            int w = getWidth();
+            int h = getHeight();
+            if (w <= 2 || h <= 2) {
+                g.dispose();
+                return;
+            }
+            boolean enabled = isEnabled();
+            boolean pressed = getModel().isPressed();
+            java.awt.Shape shape = pixelShape(w, h - 2, 4);
+
+            Color textColor;
+            if (tone == Tone.PRIMARY) {
+                g.setColor(new Color(0, 0, 0, 80));
+                g.fill(pixelShape(3, h - 2, 4));
+                g.setPaint(Palette.accentGradient(0, 0, w, h));
+                if (!enabled) {
+                    g.setColor(Palette.mix(Palette.ACCENT, new Color(0x241C28), 0.62f));
+                } else if (pressed) {
+                    g.setColor(Palette.ACCENT_DEEP);
+                } else if (hover) {
+                    g.setColor(Palette.ACCENT_HOVER);
+                }
+                g.fill(shape);
+                g.setColor(Palette.alpha(Color.WHITE, 55));
+                g.draw(shape);
+                textColor = enabled ? Palette.ON_ACCENT : Palette.alpha(Color.WHITE, 130);
+            } else if (tone == Tone.SECONDARY) {
+                g.setColor(hover && enabled
+                        ? Palette.alpha(Color.WHITE, 24)
+                        : Palette.alpha(Color.WHITE, 12));
+                g.fill(shape);
+                g.setColor(hover && enabled
+                        ? Palette.alpha(Palette.ACCENT, 130)
+                        : Palette.alpha(Color.WHITE, 54));
+                g.draw(shape);
+                textColor = enabled ? new Color(0xF4EDF7) : Palette.alpha(Color.WHITE, 100);
+            } else {
+                if (hover && enabled) {
+                    g.setColor(Palette.alpha(Color.WHITE, 10));
+                    g.fill(shape);
+                }
+                g.setColor(hover && enabled ? Palette.alpha(Palette.ACCENT, 90) : Palette.alpha(Color.WHITE, 30));
+                g.draw(shape);
+                textColor = enabled ? Palette.alpha(Color.WHITE, 175) : Palette.alpha(Color.WHITE, 80);
+            }
+
+            g.setFont(getFont());
+            java.awt.FontMetrics metrics = g.getFontMetrics();
+            int icon = telegram ? 18 : 0;
+            int total = metrics.stringWidth(getText()) + icon;
+            int x = Math.max(10, (w - total) / 2);
+            int y = (h - metrics.getHeight()) / 2 + metrics.getAscent();
+            if (telegram) {
+                int cx = x + 7;
+                int cy = h / 2 - 1;
+                g.setColor(textColor);
+                g.fillPolygon(new java.awt.Polygon(
+                        new int[]{cx - 6, cx + 7, cx + 1, cx - 3},
+                        new int[]{cy + 1, cy - 5, cy + 6, cy + 2}, 4));
+                x += icon;
+            }
+            g.setColor(textColor);
+            g.drawString(getText(), x, y);
+            g.dispose();
+        }
+
+        private static java.awt.Shape pixelShape(int w, int h, int cut) {
+            return new java.awt.Polygon(
+                    new int[]{cut, w - cut, w, w, w - cut, cut, 0, 0},
+                    new int[]{0, 0, cut, h - cut, h, h, h - cut, cut}, 8);
         }
     }
 
@@ -752,9 +888,9 @@ public final class Widgets {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, 16, Palette.SURFACE_ALT);
+            Palette.fillRound(g, 0, 0, w, h, 4, Palette.SURFACE_ALT);
             g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 16, Palette.LINE);
+            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 4, Palette.LINE);
             g.dispose();
             super.paintComponent(graphics);
         }

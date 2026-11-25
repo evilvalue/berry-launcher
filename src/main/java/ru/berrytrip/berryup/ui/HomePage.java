@@ -1,5 +1,6 @@
 package ru.berrytrip.berryup.ui;
 
+import ru.berrytrip.berryup.Auth;
 import ru.berrytrip.berryup.Cfg;
 import ru.berrytrip.berryup.Prism;
 import ru.berrytrip.berryup.Tweaks;
@@ -26,11 +27,10 @@ public class HomePage extends JPanel {
     private final JTextArea warningText;
     private final Widgets.BerryButton install;
     private final Widgets.BerryButton pickLauncher;
-    private final JLabel infoBuild;
-    private final JLabel infoServer;
-    private final JLabel infoVersion;
     private final JLabel statMods;
     private final JLabel statMemory;
+    private final JLabel accountLine;
+    private final Widgets.BerryButton accountButton;
     private final Widgets.Chip heroChip;
 
     public HomePage(MainFrame host) {
@@ -43,7 +43,7 @@ public class HomePage extends JPanel {
         hero.setAlignmentX(LEFT_ALIGNMENT);
         hero.setBorder(BorderFactory.createEmptyBorder(22, 24, 22, 24));
         hero.tint(Palette.ACCENT);
-        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 178));
+        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 142));
         hero.add(new Widgets.Logo(66), BorderLayout.WEST);
 
         JPanel heroText = new JPanel();
@@ -52,26 +52,13 @@ public class HomePage extends JPanel {
         JLabel title = Widgets.label(Cfg.BUILD, Palette.semi(29f), Palette.FG);
         title.setAlignmentX(LEFT_ALIGNMENT);
         heroText.add(title);
-        heroText.add(Box.createVerticalStrut(2));
-        JLabel sub = Widgets.label("Minecraft " + Cfg.MC_VERSION + "  ·  " + Cfg.LOADER
-                + "  ·  BerryUp " + Cfg.VERSION, Palette.reg(9f), Palette.MUTED);
-        sub.setAlignmentX(LEFT_ALIGNMENT);
-        heroText.add(sub);
-        heroText.add(Box.createVerticalStrut(10));
-        JTextArea intro = Widgets.paragraph(
-                "Выживание, приключения и друзья. Запуск и сервер — слева, клиент и скины — во вкладках.",
-                Palette.reg(9.4f), Palette.MUTED);
-        intro.setAlignmentX(LEFT_ALIGNMENT);
-        intro.setRows(2);
-        heroText.add(intro);
-        heroText.add(Box.createVerticalStrut(10));
+        heroText.add(Box.createVerticalStrut(12));
 
         JPanel heroChips = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         heroChips.setOpaque(false);
         heroChips.setAlignmentX(LEFT_ALIGNMENT);
         heroChip = new Widgets.Chip("", Palette.OK);
         heroChips.add(heroChip);
-        heroChips.add(new Widgets.Chip("QuickSkin · скины и плащи", Palette.VIOLET));
         heroText.add(heroChips);
         hero.add(heroText, BorderLayout.CENTER);
         add(hero);
@@ -110,17 +97,12 @@ public class HomePage extends JPanel {
         stats.setAlignmentX(LEFT_ALIGNMENT);
         stats.setMaximumSize(new Dimension(Integer.MAX_VALUE, 96));
         statMods = statCard(stats, "МОДОВ", Palette.ACCENT);
-        statMemory = statCard(stats, "ВЫДЕЛЕНО ПАМЯТИ", Palette.OK);
-        statCard(stats, "ВЕРСИЯ BERRYUP", Palette.FG).setText("v" + Cfg.VERSION);
+        statMemory = statCard(stats, "ПАМЯТЬ", Palette.OK);
+        statCard(stats, "BERRYUP", Palette.FG).setText("v" + Cfg.VERSION);
         add(stats);
         add(Box.createVerticalStrut(18));
 
         // ---------------------------------------------------------- ссылки
-        JLabel linksCaption = Widgets.label("ГДЕ СЛЕДИТЬ ЗА СБОРКОЙ", Palette.semi(8.5f), Palette.DIM);
-        linksCaption.setAlignmentX(LEFT_ALIGNMENT);
-        add(linksCaption);
-        add(Box.createVerticalStrut(8));
-
         JPanel links = new JPanel(new GridLayout(1, 2, 12, 0));
         links.setOpaque(false);
         links.setAlignmentX(LEFT_ALIGNMENT);
@@ -128,39 +110,26 @@ public class HomePage extends JPanel {
         links.add(new Widgets.LinkCard("Сайт сборки", "evilvalue.github.io/berry", Cfg.SITE, Widgets.Glyph.SITE));
         links.add(new Widgets.LinkCard("Telegram-канал", "@killberries", Cfg.TELEGRAM, Widgets.Glyph.TELEGRAM));
         add(links);
-        add(Box.createVerticalStrut(18));
+        add(Box.createVerticalStrut(14));
 
-        Widgets.Card info = new Widgets.Card();
-        info.setAlignmentX(LEFT_ALIGNMENT);
-        info.setLayout(new GridBagLayout());
-        info.pad(16, 18, 16, 18);
-        info.setMaximumSize(new Dimension(Integer.MAX_VALUE, 170));
+        Widgets.Card accountCard = new Widgets.Card(new BorderLayout(12, 0));
+        accountCard.setAlignmentX(LEFT_ALIGNMENT);
+        accountCard.pad(12, 16, 12, 16);
+        accountCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 74));
+        JPanel accountText = new JPanel();
+        accountText.setOpaque(false);
+        accountText.setLayout(new BoxLayout(accountText, BoxLayout.Y_AXIS));
+        accountText.add(Widgets.caption("АККАУНТ", Palette.SURFACE));
+        accountText.add(Box.createVerticalStrut(3));
+        accountLine = Widgets.label("", Palette.reg(9.6f), Palette.FG);
+        accountText.add(accountLine);
+        accountCard.add(accountText, BorderLayout.CENTER);
+        accountButton = new Widgets.BerryButton("Открыть", Widgets.BerryButton.Kind.SECONDARY);
+        accountButton.addActionListener(e -> host.showPage(1));
+        accountCard.add(accountButton, BorderLayout.EAST);
+        add(accountCard);
 
-        GridBagConstraints gc = new GridBagConstraints();
-        gc.gridx = 0;
-        gc.gridy = 0;
-        gc.gridwidth = 2;
-        gc.anchor = GridBagConstraints.WEST;
-        gc.insets = new Insets(0, 0, 8, 0);
-        info.add(Widgets.label("КОРОТКО О СБОРКЕ", Palette.semi(8.5f), Palette.DIM), gc);
-
-        infoBuild = Widgets.label(Cfg.BUILD + "  ·  " + Cfg.LOADER + "  ·  Minecraft " + Cfg.MC_VERSION,
-                Palette.reg(9.4f), Palette.FG);
-        infoServer = Widgets.label(Cfg.SERVER_HOST + ":" + Cfg.SERVER_PORT, Palette.reg(9.4f), Palette.FG);
-        infoVersion = Widgets.label("BerryUp " + Cfg.VERSION, Palette.reg(9.4f), Palette.FG);
-
-        addRow(info, gc, 1, "Сборка", infoBuild);
-        addRow(info, gc, 2, "Сервер", infoServer);
-        addRow(info, gc, 3, "Версия", infoVersion);
-        add(info);
-        add(Box.createVerticalStrut(12));
-
-        JLabel hint = Widgets.label("Ссылки откроются в браузере. Журнал и диагностика — в соседних вкладках.",
-                Palette.reg(8.2f), Palette.DIM);
-        hint.setAlignmentX(LEFT_ALIGNMENT);
-        add(hint);
         add(Box.createVerticalGlue());
-
         refresh();
     }
 
@@ -178,21 +147,6 @@ public class HomePage extends JPanel {
         card.add(text);
         parent.add(card);
         return value;
-    }
-
-    private void addRow(JPanel card, GridBagConstraints gc, int row, String key, JLabel value) {
-        gc.gridy = row;
-        gc.gridwidth = 1;
-        gc.insets = new Insets(3, 0, 3, 14);
-        gc.weightx = 0;
-        gc.fill = GridBagConstraints.NONE;
-        card.add(Widgets.label(key, Palette.reg(8.8f), Palette.MUTED), gc);
-
-        gc.gridx = 1;
-        gc.weightx = 1;
-        gc.fill = GridBagConstraints.HORIZONTAL;
-        card.add(value, gc);
-        gc.gridx = 0;
     }
 
     public void refresh() {
@@ -214,12 +168,23 @@ public class HomePage extends JPanel {
         statMods.setText(mods > 0 ? String.valueOf(mods) : "—");
         statMemory.setText(Tweaks.effectiveMemory() + " ГБ");
         if (installed) {
-            heroChip.setText("сборка готова к игре · " + mods + " модов");
+            heroChip.setText("ГОТОВО К ИГРЕ");
             heroChip.setColor(Palette.OK);
         } else {
-            heroChip.setText("сборка ставится в один клик");
+            heroChip.setText("НУЖНА УСТАНОВКА");
             heroChip.setColor(Palette.WARN);
         }
+
+        int token = Auth.tokenState(prism);
+        String nick = Auth.tokenNick(prism);
+        if (nick.isEmpty()) nick = Auth.nick();
+        boolean signed = token == Auth.TOKEN_OK;
+        boolean pending = Auth.pending();
+        accountLine.setText(signed
+                ? (nick.isEmpty() ? "Вход выполнен" : nick + "  ·  вход выполнен")
+                : pending ? "Ожидает подтверждения в Telegram" : "Вход не выполнен");
+        accountLine.setForeground(signed ? Palette.OK : pending ? Palette.ACCENT_2 : Palette.MUTED);
+        accountButton.setText(signed || pending ? "Аккаунт" : "Войти");
 
         revalidate();
         repaint();

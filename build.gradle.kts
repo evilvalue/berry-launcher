@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "ru.berrytrip"
-version = "3.11.0"
+version = "3.12.0"
 
 // Java 8 target: jar запускается и на Java 8, и на Java 21, которая уже есть у Prism.
 java {

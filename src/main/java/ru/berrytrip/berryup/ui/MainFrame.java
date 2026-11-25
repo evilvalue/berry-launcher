@@ -175,7 +175,7 @@ public class MainFrame extends JFrame {
         side.add(playButton);
         side.add(Box.createVerticalStrut(8));
 
-        connectButton = new Widgets.BerryButton("Играть с подключением к серверу", Widgets.BerryButton.Kind.SECONDARY);
+        connectButton = new Widgets.BerryButton("Играть на сервере", Widgets.BerryButton.Kind.SECONDARY);
         connectButton.setAlignmentX(LEFT_ALIGNMENT);
         connectButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         connectButton.addActionListener(e -> play(true));
@@ -228,11 +228,12 @@ public class MainFrame extends JFrame {
         statusRow.setAlignmentX(LEFT_ALIGNMENT);
         statusRow.add(serverDot);
         serverStatus = Widgets.label("проверяю…", Palette.reg(8.5f), Palette.MUTED);
+        serverStatus.setToolTipText("TCP-задержка до сервера, как в игре. MOTD и ответ status в цифру не входят.");
         statusRow.add(serverStatus);
         serverCard.add(statusRow);
         serverCard.add(Box.createVerticalStrut(6));
 
-        serverMotd = Widgets.paragraph(selectedServer().endpoint() + "\nпроверяю…",
+        serverMotd = Widgets.paragraph(selectedServer().endpoint(),
                 Palette.reg(8.5f), Palette.DIM);
         serverMotd.setAlignmentX(LEFT_ALIGNMENT);
         serverMotd.setRows(3);
@@ -267,10 +268,6 @@ public class MainFrame extends JFrame {
         side.add(quick);
 
         side.add(Box.createVerticalGlue());
-        JLabel sideFoot = Widgets.label("BerryUp " + Cfg.VERSION + "  ·  %APPDATA%\\BerryUp",
-                Palette.reg(7.8f), Palette.DIM);
-        sideFoot.setAlignmentX(LEFT_ALIGNMENT);
-        side.add(sideFoot);
 
         // Колонка сужается вместе с окном, а на низком экране прокручивается.
         // Ширину задаём обёртке, высоту берём настоящую — иначе BoxLayout
@@ -318,14 +315,6 @@ public class MainFrame extends JFrame {
         headNav.fill = java.awt.GridBagConstraints.HORIZONTAL;
         headNav.anchor = java.awt.GridBagConstraints.WEST;
         header.add(nav, headNav);
-        Widgets.BerryButton site = new Widgets.BerryButton("Сайт сборки", Widgets.BerryButton.Kind.GHOST);
-        site.addActionListener(e -> ru.berrytrip.berryup.Sys.openUrl(Cfg.SITE));
-        java.awt.GridBagConstraints headSite = new java.awt.GridBagConstraints();
-        headSite.gridx = 1;
-        headSite.weightx = 0;
-        headSite.anchor = java.awt.GridBagConstraints.EAST;
-        headSite.insets = new java.awt.Insets(0, 8, 0, 0);
-        header.add(site, headSite);
 
         JPanel titles = new JPanel();
         titles.setOpaque(false);
@@ -333,11 +322,9 @@ public class MainFrame extends JFrame {
         titles.setBorder(BorderFactory.createEmptyBorder(18, 2, 2, 0));
         pageTitle = Widgets.label(PAGE_TITLES[0], Palette.semi(24f), Palette.FG);
         pageTitle.setAlignmentX(LEFT_ALIGNMENT);
-        pageSub = Widgets.label(PAGE_SUBS[0], Palette.reg(9.6f), Palette.MUTED);
-        pageSub.setAlignmentX(LEFT_ALIGNMENT);
+        pageSub = Widgets.label("", Palette.reg(9.6f), Palette.MUTED);
+        pageTitle.setAlignmentX(LEFT_ALIGNMENT);
         titles.add(pageTitle);
-        titles.add(Box.createVerticalStrut(4));
-        titles.add(pageSub);
 
         JPanel top = new JPanel(new BorderLayout(0, 12));
         top.setOpaque(false);
@@ -364,8 +351,7 @@ public class MainFrame extends JFrame {
         bottom.setBorder(BorderFactory.createEmptyBorder(8, 2, 0, 2));
         stateLabel = Widgets.label("Готово", Palette.reg(8.2f), Palette.DIM);
         bottom.add(stateLabel, BorderLayout.WEST);
-        JLabel version = Widgets.label("BerryUp " + Cfg.VERSION + "  ·  журнал: %TEMP%\\BerryUp.log",
-                Palette.reg(8f), Palette.DIM);
+        JLabel version = Widgets.label("BerryUp " + Cfg.VERSION, Palette.reg(8f), Palette.DIM);
         bottom.add(version, BorderLayout.EAST);
 
         JPanel center = new JPanel(new BorderLayout(0, 0));
@@ -864,9 +850,9 @@ public class MainFrame extends JFrame {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, 16, Palette.mix(Palette.SURFACE, Palette.ACCENT, 0.07f));
+            Palette.fillRound(g, 0, 0, w, h, 4, Palette.mix(Palette.SURFACE, Palette.ACCENT, 0.07f));
             g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 16, Palette.alpha(Palette.ACCENT, 80));
+            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 4, Palette.alpha(Palette.ACCENT, 80));
             g.dispose();
             super.paintComponent(graphics);
         }

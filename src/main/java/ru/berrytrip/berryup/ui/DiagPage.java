@@ -72,11 +72,11 @@ public class DiagPage extends JPanel {
         buttons.setAlignmentX(LEFT_ALIGNMENT);
         buttons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
-        Widgets.BerryButton refresh = new Widgets.BerryButton("Перепроверить", Widgets.BerryButton.Kind.SECONDARY);
+        Widgets.BerryButton refresh = new Widgets.BerryButton("Обновить", Widgets.BerryButton.Kind.SECONDARY);
         refresh.addActionListener(e -> refresh());
         Widgets.BerryButton folder = new Widgets.BerryButton("Открыть папку", Widgets.BerryButton.Kind.SECONDARY);
         folder.addActionListener(e -> host.openInstanceFolder());
-        Widgets.BerryButton config = new Widgets.BerryButton("instance.cfg", Widgets.BerryButton.Kind.SECONDARY);
+        Widgets.BerryButton config = new Widgets.BerryButton("Конфиг сборки", Widgets.BerryButton.Kind.SECONDARY);
         config.addActionListener(e -> {
             Prism prism = host.prism();
             if (prism == null || !prism.hasInstance()) {
@@ -97,12 +97,6 @@ public class DiagPage extends JPanel {
         buttons.add(config);
         buttons.add(copy);
         add(buttons);
-        add(Box.createVerticalStrut(10));
-
-        JLabel hint = Widgets.label("Если игра не запускается: сначала «Обновить сборку», потом проверь Java в Prism.",
-                Palette.reg(8.5f), Palette.DIM);
-        hint.setAlignmentX(LEFT_ALIGNMENT);
-        add(hint);
         add(Box.createVerticalGlue());
 
         refresh();

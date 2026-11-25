@@ -34,7 +34,6 @@ public class SettingsPage extends JPanel {
     private final Widgets.MemorySlider memorySlider;
     private final javax.swing.JLabel memoryValue;
     private final javax.swing.JLabel launcherName;
-    private final javax.swing.JLabel launcherPath;
     private final int totalRam;
     private final String[] scaleValues = {"", "1.0", "1.25", "1.5", "1.75", "2.0"};
     private javax.swing.JComboBox<String> scaleBox;
@@ -63,14 +62,11 @@ public class SettingsPage extends JPanel {
         Widgets.Card mods = new Widgets.Card();
         mods.setLayout(new BoxLayout(mods, BoxLayout.Y_AXIS));
         mods.pad(14, 16, 14, 16);
-        mods.add(leftAligned(Widgets.caption("КЛИЕНТСКИЕ МОДЫ", Palette.SURFACE)));
-        mods.add(Widgets.vgap(2));
-        mods.add(leftAligned(Widgets.label("На сервер не влияет — только на твой клиент.",
-                Palette.reg(8.5f), Palette.DIM)));
-        mods.add(Widgets.vgap(10));
+        mods.add(leftAligned(Widgets.caption("МОДЫ", Palette.SURFACE)));
+        mods.add(Widgets.vgap(8));
 
         for (Tweaks.Mod mod : Tweaks.MODS) {
-            Widgets.Toggle toggle = new Widgets.Toggle(mod.label, mod.hint, Tweaks.getMod(mod));
+            Widgets.Toggle toggle = new Widgets.Toggle(mod.label, null, Tweaks.getMod(mod));
             toggle.setAlignmentX(LEFT_ALIGNMENT);
             toggle.setToolTipText(Tweaks.describe(mod));
             toggle.onChange(value -> {
@@ -81,22 +77,10 @@ public class SettingsPage extends JPanel {
             mods.add(Widgets.vgap(2));
         }
 
-        mods.add(Widgets.vgap(6));
-        JPanel rule = new JPanel();
-        rule.setBackground(Palette.LINE);
-        rule.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-        rule.setPreferredSize(new Dimension(10, 1));
-        mods.add(rule);
-        mods.add(Widgets.vgap(8));
-        mods.add(leftAligned(Widgets.caption("ВСЕГДА ВКЛЮЧЕНЫ", Palette.SURFACE)));
-        mods.add(Widgets.vgap(4));
-        JLabel always = Widgets.label("<html><div style='width:300px'>"
-                + Tweaks.lockedText().replace("\n", "<br>") + "</div></html>", Palette.reg(8f), Palette.DIM);
-        mods.add(leftAligned(always));
         mods.add(Box.createVerticalGlue());
 
-        mods.setMinimumSize(new Dimension(340, 300));
-        mods.setMaximumSize(new Dimension(Integer.MAX_VALUE, 350));
+        mods.setMinimumSize(new Dimension(340, 260));
+        mods.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
         leftColumn.add(mods);
         leftColumn.add(Widgets.vgap(10));
         gc.gridx = 0;
@@ -114,7 +98,7 @@ public class SettingsPage extends JPanel {
         gfx.pad(14, 16, 14, 16);
         gfx.add(leftAligned(Widgets.caption("ГРАФИКА", Palette.SURFACE)));
         gfx.add(Widgets.vgap(8));
-        Widgets.Toggle packs = new Widgets.Toggle("Ресурспаки", "20 шт. · меньше видеопамяти", Tweaks.getBool("packs", true));
+        Widgets.Toggle packs = new Widgets.Toggle("Ресурспаки", null, Tweaks.getBool("packs", true));
         packs.setAlignmentX(LEFT_ALIGNMENT);
         packs.setToolTipText("Отключает все ресурспаки в options.txt: меньше видеопамяти и быстрее загрузка.");
         packs.onChange(value -> {
@@ -122,7 +106,7 @@ public class SettingsPage extends JPanel {
             applyTweaks(value ? "Ресурспаки включены" : "Ресурспаки выключены");
         });
         gfx.add(packs);
-        Widgets.Toggle shaders = new Widgets.Toggle("Шейдеры", "Solas · Iris", Tweaks.getBool("shaders", false));
+        Widgets.Toggle shaders = new Widgets.Toggle("Шейдеры", null, Tweaks.getBool("shaders", false));
         shaders.setAlignmentX(LEFT_ALIGNMENT);
         shaders.setToolTipText("Шейдеры Iris. В сборке выключены, чтобы не просаживать FPS.");
         shaders.onChange(value -> {
@@ -144,7 +128,7 @@ public class SettingsPage extends JPanel {
         memoryHead.setOpaque(false);
         memoryHead.setAlignmentX(LEFT_ALIGNMENT);
         memoryHead.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
-        memoryHead.add(Widgets.caption("ПАМЯТЬ ДЛЯ ИГРЫ", Palette.SURFACE), BorderLayout.WEST);
+        memoryHead.add(Widgets.caption("ПАМЯТЬ", Palette.SURFACE), BorderLayout.WEST);
         memoryValue = Widgets.label("", Palette.semi(11f), Palette.ACCENT);
         memoryHead.add(memoryValue, BorderLayout.EAST);
         memory.add(memoryHead);
@@ -191,8 +175,7 @@ public class SettingsPage extends JPanel {
         behaviour.add(leftAligned(Widgets.caption("ЛАУНЧЕР", Palette.SURFACE)));
         behaviour.add(Widgets.vgap(6));
 
-        Widgets.Toggle darkTheme = new Widgets.Toggle("Тёмная тема", "пиксельный стиль, как в игре",
-                Palette.isDark());
+        Widgets.Toggle darkTheme = new Widgets.Toggle("Тёмная тема", null, Palette.isDark());
         darkTheme.setAlignmentX(LEFT_ALIGNMENT);
         darkTheme.setToolTipText("Переключить светлое и тёмное оформление. Окно быстро пересоберётся.");
         darkTheme.onChange(host::applyTheme);
@@ -205,11 +188,7 @@ public class SettingsPage extends JPanel {
 
         launcherName = Widgets.label("Prism Launcher", Palette.reg(8.8f), Palette.FG);
         launcherName.setAlignmentX(LEFT_ALIGNMENT);
-        launcherPath = Widgets.label("не найден", Palette.reg(7.6f), Palette.DIM);
-        launcherPath.setAlignmentX(LEFT_ALIGNMENT);
         pathColumn.add(launcherName);
-        pathColumn.add(Widgets.vgap(2));
-        pathColumn.add(launcherPath);
         pathColumn.add(Widgets.vgap(6));
 
         javax.swing.JPanel pathButtons = new javax.swing.JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
@@ -227,7 +206,7 @@ public class SettingsPage extends JPanel {
         behaviour.add(pathColumn);
         behaviour.add(Widgets.vgap(4));
 
-        Widgets.Toggle autoUpdate = new Widgets.Toggle("Обновления при запуске", "проверять latest.json", Store.autoUpdate());
+        Widgets.Toggle autoUpdate = new Widgets.Toggle("Обновления при запуске", null, Store.autoUpdate());
         autoUpdate.setAlignmentX(LEFT_ALIGNMENT);
         autoUpdate.setToolTipText("Спрашивать launcher/latest.json при каждом старте и предлагать новую версию.");
         autoUpdate.onChange(value -> {
@@ -236,7 +215,7 @@ public class SettingsPage extends JPanel {
             Log.info(value ? "Проверка обновлений при запуске включена." : "Проверка обновлений при запуске выключена.");
         });
         behaviour.add(autoUpdate);
-        Widgets.Toggle minimize = new Widgets.Toggle("Сворачивать после игры", "окно уйдёт в панель задач", Store.minimizeOnPlay());
+        Widgets.Toggle minimize = new Widgets.Toggle("Сворачивать после игры", null, Store.minimizeOnPlay());
         minimize.setAlignmentX(LEFT_ALIGNMENT);
         minimize.setToolTipText("Окно BerryUp свернётся, как только Prism начнёт запуск игры.");
         minimize.onChange(value -> {
@@ -278,7 +257,7 @@ public class SettingsPage extends JPanel {
         setupRow.add(scaleWrap, BorderLayout.EAST);
         behaviour.add(Widgets.vgap(4));
         behaviour.add(setupRow);
-        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 330));
+        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 280));
         right.add(behaviour);
         right.add(Box.createVerticalGlue());
 
@@ -349,7 +328,6 @@ public class SettingsPage extends JPanel {
 
         updateMemoryLabel();
         logArea.setText("");
-        appendLog("Журнал BerryUp. Файл: " + Log.path());
     }
 
     /** Вернуть селектор к сохранённому масштабу, если перезапуск отменили. */
@@ -369,11 +347,9 @@ public class SettingsPage extends JPanel {
         if (prism == null) {
             launcherName.setText("Лаунчер не найден");
             launcherName.setForeground(Palette.WARN);
-            launcherPath.setText("нажми «Выбрать…» или скачай Prism");
         } else {
             launcherName.setText(prism.kind + (prism.hasInstance() ? "  ·  сборка на месте" : "  ·  сборки нет"));
             launcherName.setForeground(Palette.FG);
-            launcherPath.setText(Sys.clipPath(prism.exe.getAbsolutePath(), 52));
         }
         revalidate();
     }

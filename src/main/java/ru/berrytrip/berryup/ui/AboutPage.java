@@ -39,60 +39,38 @@ public class AboutPage extends JPanel {
         title.setAlignmentX(LEFT_ALIGNMENT);
         headText.add(title);
         headText.add(Box.createVerticalStrut(3));
-        JLabel sub = Widgets.label("Надстройка над Prism Launcher  ·  " + Cfg.BUILD
-                + "  ·  Minecraft " + Cfg.MC_VERSION, Palette.reg(9f), Palette.MUTED);
+        JLabel sub = Widgets.label(Cfg.BUILD + "  ·  Minecraft " + Cfg.MC_VERSION,
+                Palette.reg(9f), Palette.MUTED);
         sub.setAlignmentX(LEFT_ALIGNMENT);
         headText.add(sub);
         headText.add(Box.createVerticalStrut(10));
-        JPanel chips = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        chips.setOpaque(false);
-        chips.setAlignmentX(LEFT_ALIGNMENT);
-        chips.add(new Widgets.Chip("Java 8+", Palette.VIOLET));
-        chips.add(new Widgets.Chip("Windows", Palette.MUTED));
-        chips.add(new Widgets.Chip("~1,5 МБ", Palette.OK));
-        headText.add(chips);
         head.add(headText, BorderLayout.CENTER);
         add(head);
         add(Box.createVerticalStrut(14));
 
-        Widgets.Card notes = new Widgets.Card();
-        notes.setLayout(new BoxLayout(notes, BoxLayout.Y_AXIS));
-        notes.pad(20, 24, 20, 24);
-        notes.setAlignmentX(LEFT_ALIGNMENT);
-        notes.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
-        notes.add(left(Widgets.caption("ЧТО НОВОГО В 3.11.0", Palette.SURFACE)));
-        notes.add(Box.createVerticalStrut(10));
+        Widgets.Card actions = new Widgets.Card();
+        actions.setLayout(new BoxLayout(actions, BoxLayout.Y_AXIS));
+        actions.pad(18, 20, 18, 20);
+        actions.setAlignmentX(LEFT_ALIGNMENT);
+        actions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 190));
 
-        JTextArea list = Widgets.paragraph(
-                "•  Вход через Telegram стал проще: сервер выдаёт ссылку сам.\n"
-                        + "•  Нажал Start — ник сразу в вайтлисте, лаунчер видит вход.\n"
-                        + "•  Одноразовые ссылки вместо nonce: меньше дыр и путаницы.\n"
-                        + "•  Спокойный нейтральный фон и 3D-модель без сцены.\n"
-                        + "•  Окно 3:2, крупный шрифт и медленное вращение на месте.\n"
-                        + "•  Скины, плащи QuickSkin и drag&drop остались.",
-                Palette.reg(9.3f), Palette.MUTED);
-        list.setAlignmentX(LEFT_ALIGNMENT);
-        list.setMaximumSize(new Dimension(Integer.MAX_VALUE, 170));
-        notes.add(list);
-        notes.add(Box.createVerticalStrut(12));
-
-        status = Widgets.label("Проверка обновлений — по кнопке ниже.", Palette.reg(8.8f), Palette.DIM);
+        status = Widgets.label("", Palette.reg(8.8f), Palette.DIM);
         status.setAlignmentX(LEFT_ALIGNMENT);
-        notes.add(status);
-        add(notes);
-        add(Box.createVerticalStrut(14));
+        status.setVisible(false);
+        actions.add(status);
+        actions.add(Box.createVerticalStrut(8));
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         buttons.setOpaque(false);
         buttons.setAlignmentX(LEFT_ALIGNMENT);
         buttons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-
         Widgets.BerryButton check = new Widgets.BerryButton("Проверить обновление", Widgets.BerryButton.Kind.PRIMARY);
         check.addActionListener(e -> {
             status.setText("Проверяю…");
+            status.setVisible(true);
             host.checkUpdates(true);
         });
-        Widgets.BerryButton site = new Widgets.BerryButton("Сайт сборки", Widgets.BerryButton.Kind.SECONDARY);
+        Widgets.BerryButton site = new Widgets.BerryButton("Сайт", Widgets.BerryButton.Kind.SECONDARY);
         site.addActionListener(e -> Sys.openUrl(Cfg.SITE));
         Widgets.BerryButton telegram = new Widgets.BerryButton("Telegram", Widgets.BerryButton.Kind.SECONDARY);
         telegram.addActionListener(e -> Sys.openUrl(Cfg.TELEGRAM));
@@ -102,7 +80,8 @@ public class AboutPage extends JPanel {
         buttons.add(site);
         buttons.add(telegram);
         buttons.add(releases);
-        add(buttons);
+        actions.add(buttons);
+        actions.add(Box.createVerticalStrut(6));
 
         JPanel buttons2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         buttons2.setOpaque(false);
@@ -110,23 +89,15 @@ public class AboutPage extends JPanel {
         buttons2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         Widgets.BerryButton sources = new Widgets.BerryButton("Исходники", Widgets.BerryButton.Kind.GHOST);
         sources.addActionListener(e -> Sys.openUrl(Cfg.REPO));
-        Widgets.BerryButton config = new Widgets.BerryButton("Папка настроек", Widgets.BerryButton.Kind.GHOST);
+        Widgets.BerryButton config = new Widgets.BerryButton("Настройки", Widgets.BerryButton.Kind.GHOST);
         config.addActionListener(e -> Sys.openFolder(Cfg.configDir()));
-        Widgets.BerryButton prism = new Widgets.BerryButton("Скачать Prism Launcher", Widgets.BerryButton.Kind.SECONDARY);
+        Widgets.BerryButton prism = new Widgets.BerryButton("Prism Launcher", Widgets.BerryButton.Kind.GHOST);
         prism.addActionListener(e -> Sys.openUrl(Cfg.PRISM_URL));
-        Widgets.BerryButton pine = new Widgets.BerryButton("PineconeMC", Widgets.BerryButton.Kind.GHOST);
-        pine.addActionListener(e -> Sys.openUrl(Cfg.PINE_URL));
         buttons2.add(sources);
         buttons2.add(config);
         buttons2.add(prism);
-        buttons2.add(pine);
-        add(buttons2);
-        add(Box.createVerticalStrut(10));
-
-        JLabel note = Widgets.label("BerryUp не заменяет Prism Launcher: без него игра не запустится.",
-                Palette.reg(8.4f), Palette.DIM);
-        note.setAlignmentX(LEFT_ALIGNMENT);
-        add(note);
+        actions.add(buttons2);
+        add(actions);
         add(Box.createVerticalGlue());
     }
 
@@ -139,6 +110,7 @@ public class AboutPage extends JPanel {
         if (host.prism() == null) {
             status.setText("Prism Launcher не найден — игра не запустится без него.");
             status.setForeground(Palette.WARN);
+            status.setVisible(true);
         }
     }
 
@@ -146,12 +118,15 @@ public class AboutPage extends JPanel {
         if (info == null) {
             status.setText("Проверка не удалась: " + UpdateCheck.lastError());
             status.setForeground(Palette.ERR);
+            status.setVisible(true);
         } else if (UpdateCheck.isNewer(info)) {
             status.setText("Доступна версия " + info.version + " — открой «Релизы» и скачай новый BerryUp.jar.");
             status.setForeground(Palette.ACCENT);
+            status.setVisible(true);
         } else {
             status.setText("Установлена последняя версия: " + Cfg.VERSION);
             status.setForeground(Palette.OK);
+            status.setVisible(true);
         }
     }
 }

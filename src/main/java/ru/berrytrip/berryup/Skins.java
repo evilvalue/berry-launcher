@@ -81,6 +81,29 @@ public final class Skins {
         return asset == null ? null : asset.image;
     }
 
+    /** activeModelType из QuickSkin: auto, classic или slim. */
+    public static String model(Prism prism) {
+        File config = prism == null ? null : new File(prism.minecraftDir(), "config/quickskin-client.json");
+        if (config == null || !config.isFile()) return "auto";
+        try {
+            JsonObject json = JsonParser.parseString(Sys.read(config)).getAsJsonObject();
+            return normalizeModel(json.has("activeModelType")
+                    ? json.get("activeModelType").getAsString() : "auto");
+        } catch (Exception error) {
+            return "auto";
+        }
+    }
+
+    public static void setModel(Prism prism, String value) {
+        String model = normalizeModel(value);
+        updateConfig(prism, json -> json.addProperty("activeModelType", model));
+    }
+
+    public static String normalizeModel(String value) {
+        String model = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        return model.equals("classic") || model.equals("slim") ? model : "auto";
+    }
+
     public static Asset currentAsset(Prism prism, boolean cape) {
         if (prism == null || !prism.hasInstance()) return null;
         File[] files = (cape ? capeDir(prism) : skinDir(prism)).listFiles();
@@ -148,11 +171,11 @@ public final class Skins {
      * Кладёт скин в пул QuickSkin и прописывает его в конфиг мода.
      * Возвращает имя файла в папке скинов.
      */
-    public static String applySkin(Prism prism, File source, String nick) throws Exception {
+    public static String applySkin(Prism prism, File source, String nick, String model) throws Exception {
         Asset asset = readSkin(source);
         File target = copy(prism, asset, false);
         String hash = "sha256-" + contentId(bytes(target), false);
-        updateSkinConfig(prism, hash, nick);
+        updateSkinConfig(prism, hash, nick, normalizeModel(model));
         return target.getName();
     }
 
@@ -184,11 +207,12 @@ public final class Skins {
         return target;
     }
 
-    private static void updateSkinConfig(Prism prism, String hash, String nick) {
+    private static void updateSkinConfig(Prism prism, String hash, String nick, String model) {
         updateConfig(prism, json -> {
             json.addProperty("activeSkinHash", hash);
             json.addProperty("playerOwnSkinHash", hash);
             json.addProperty("playerOwnSkinHidden", false);
+            json.addProperty("activeModelType", model);
             if (nick != null && !nick.isEmpty()) {
                 String account = UUID.nameUUIDFromBytes(
                         ("OfflinePlayer:" + nick).getBytes(StandardCharsets.UTF_8)) + ":" + nick;

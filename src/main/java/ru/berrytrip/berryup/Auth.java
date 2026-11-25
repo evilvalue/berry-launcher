@@ -107,6 +107,13 @@ public final class Auth {
             return "";
         } catch (Exception error) {
             Log.error("Не удалось получить ссылку входа: " + error.getMessage());
+            String detail = shortError(error).toLowerCase(java.util.Locale.ROOT);
+            if (error instanceof java.net.ConnectException
+                    || detail.contains("connection refused")
+                    || detail.contains("connect timed out")) {
+                return "Сервер входа не отвечает на порту " + apiPort() + ". "
+                        + "Проверь TCP-порт в Pterodactyl и перезапусти сервер.";
+            }
             return "Сервер входа недоступен: " + shortError(error)
                     + ". Проверь сеть или адрес auth.api в config.ini.";
         }
@@ -308,6 +315,18 @@ public final class Auth {
         if (base.isEmpty()) base = Cfg.AUTH_API;
         while (base.endsWith("/")) base = base.substring(0, base.length() - 1);
         return base + path;
+    }
+
+    /** Порт из auth.api: нужен для понятной ошибки без хардкода. */
+    private static String apiPort() {
+        String base = Store.get("auth.api", Cfg.AUTH_API).trim();
+        if (base.isEmpty()) base = Cfg.AUTH_API;
+        try {
+            int port = java.net.URI.create(base).getPort();
+            return port > 0 ? String.valueOf(port) : "80";
+        } catch (Exception ignored) {
+            return "25712";
+        }
     }
 
     private static String encode(String value) {

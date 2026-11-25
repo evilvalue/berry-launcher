@@ -60,8 +60,8 @@ public class SkinView extends JComponent {
             new Box(8, 12, 4, 0, 18, 16, 16, 16, 32),
             new Box(4, 12, 4, -6, 18, 40, 16, 40, 32),
             new Box(4, 12, 4, 6, 18, 32, 48, 48, 48),
-            new Box(4, 12, 4, -2, 6, 0, 16, 0, 32),
-            new Box(4, 12, 4, 2, 6, 16, 48, 0, 48)
+            new Box(4, 12, 4, -1.9f, 6, 0, 16, 0, 32),
+            new Box(4, 12, 4, 1.9f, 6, 16, 48, 0, 48)
     };
 
     private static final float MODEL_HEIGHT = 32f;
@@ -81,6 +81,7 @@ public class SkinView extends JComponent {
     private int dragY;
     private boolean dragging;
     private boolean dropActive;
+    private boolean slim;
 
     public SkinView() {
         setOpaque(false);
@@ -136,12 +137,19 @@ public class SkinView extends JComponent {
             texel = Math.max(1f, skin.getWidth() / 64f);
         } else {
             BufferedImage fixed = image;
+            boolean legacy = image.getWidth() == 64 && image.getHeight() == 32;
             if (image.getHeight() < 64) {
                 fixed = new BufferedImage(image.getWidth(), 64, BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g = fixed.createGraphics();
                 g.setComposite(AlphaComposite.Src);
                 g.drawImage(image, 0, 0, null);
                 g.dispose();
+            }
+            if (legacy) {
+                // 64x32: у старого формата нет левых конечностей — Java
+                // отображает их зеркалом правых. Делаем то же для превью.
+                mirrorInto(fixed, 40, 16, 16, 16, 32, 48);
+                mirrorInto(fixed, 0, 16, 16, 16, 16, 48);
             }
             skin = fixed;
             texel = Math.max(1f, fixed.getWidth() / 64f);
@@ -162,6 +170,40 @@ public class SkinView extends JComponent {
 
     public BufferedImage skin() {
         return skin;
+    }
+
+    /** Classic (4 px) или Slim (3 px) руки. Меняет только геометрию, не текстуру. */
+    public void setSlim(boolean value) {
+        if (slim == value) return;
+        slim = value;
+        repaint();
+    }
+
+    public boolean isSlim() {
+        return slim;
+    }
+
+    /** Определение slim по тем же 24 пикселям, что использует игра. */
+    public static boolean detectSlim(BufferedImage image) {
+        if (image == null || image.getWidth() < 64 || image.getHeight() < 64) return false;
+        float scale = image.getWidth() / 64f;
+        int opaque = 0;
+        for (int y = 20; y < 32; y++) {
+            for (int x = 46; x < 48; x++) {
+                int px = Math.min(image.getWidth() - 1, Math.round(x * scale));
+                int py = Math.min(image.getHeight() - 1, Math.round(y * scale));
+                if ((image.getRGB(px, py) >>> 24) != 0) opaque++;
+            }
+        }
+        return opaque < 6;
+    }
+
+    private static void mirrorInto(BufferedImage image, int sx, int sy, int w, int h, int dx, int dy) {
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                image.setRGB(dx + x, dy + y, image.getRGB(sx + (w - 1 - x), sy + y));
+            }
+        }
     }
 
     public BufferedImage cape() {
@@ -233,7 +275,7 @@ public class SkinView extends JComponent {
 
         // Модель без сцены и фона: карточка лаунчера видна сквозь превью.
         java.awt.Shape oldClip = g.getClip();
-        g.clip(Palette.round(0, 0, width, height, 20));
+        g.clip(Palette.round(0, 0, width, height, 3));
         boolean dark = Palette.isDark();
 
         float scale = (float) Math.min(width / 25.0, height / 39.0);
@@ -304,6 +346,9 @@ public class SkinView extends JComponent {
             if (u + tw > face.image.getWidth() || v + th > face.image.getHeight()) continue;
 
             BufferedImage tile = face.image.getSubimage(u, v, tw, th);
+            // Тень накладываем только на непрозрачные пиксели. Иначе
+            // прозрачные места второго слоя превращаются в серые плиты.
+            tile = shaded(tile, Math.max(0.0, Math.min(0.42, 1.0 - face.shade)));
             double x0 = face.sx[0];
             double y0 = face.sy[0];
             double x1 = face.sx[1];
@@ -315,19 +360,6 @@ public class SkinView extends JComponent {
                     (x2 - x0) / th, (y2 - y0) / th,
                     x0, y0);
             g.drawImage(tile, at, null);
-
-            int shade = (int) Math.round((1.0 - face.shade) * 130);
-            if (shade > 3) {
-                Polygon quad = new Polygon(
-                        new int[]{round(face.sx[0]), round(face.sx[1]), round(face.sx[3]), round(face.sx[2])},
-                        new int[]{round(face.sy[0]), round(face.sy[1]), round(face.sy[3]), round(face.sy[2])},
-                        4);
-                java.awt.Shape previous = g.getClip();
-                g.setClip(quad);
-                g.setColor(new Color(20, 23, 38, Math.min(130, shade)));
-                g.fill(quad);
-                g.setClip(previous);
-            }
         }
 
         if (dropActive) {
@@ -354,32 +386,40 @@ public class SkinView extends JComponent {
     }
 
     private void buildBody(List<Face> faces, boolean overlay) {
-        float inflate = overlay ? 0.5f : 0f;
         for (Box box : BOXES) {
-            if (overlay && isEmpty(box.ou, box.ov)) continue;
-            float w = box.w + inflate * 2;
-            float h = box.h + inflate * 2;
-            float d = box.d + inflate * 2;
-            double x0 = box.x - w / 2.0, x1 = box.x + w / 2.0;
+            // У головы второй слой +0.5 со всех сторон, у тела и конечностей +0.25.
+            float inflate = overlay ? (box == BOXES[0] ? 0.5f : 0.25f) : 0f;
+            boolean arm = box == BOXES[2] || box == BOXES[3];
+            float baseW = arm && slim ? 3f : box.w;
+            double baseX = arm && slim ? (box.x < 0 ? -5.5 : 5.5) : box.x;
+            // UV берём по исходным размерам блока, а раздуваем только
+            // геометрию второго слоя. Иначе UV сдвигается на величину inflate.
+            float uw = baseW;
+            float uh = box.h;
+            float ud = box.d;
+            float w = uw + inflate * 2;
+            float h = uh + inflate * 2;
+            float d = ud + inflate * 2;
+            double x0 = baseX - w / 2.0, x1 = baseX + w / 2.0;
             double y0 = box.y - h / 2.0, y1 = box.y + h / 2.0;
             double z0 = -d / 2.0, z1 = d / 2.0;
             float u = overlay ? box.ou : box.u;
             float v = overlay ? box.ov : box.v;
 
-            add(faces, skin, texel, u + d, v + d, w, h, 0, 0, 1,
+            add(faces, skin, texel, u + ud, v + ud, uw, uh, 0, 0, 1,
                     x0, y1, z1, x1, y1, z1, x0, y0, z1, x1, y0, z1);
-            add(faces, skin, texel, u + 2 * d + w, v + d, w, h, 0, 0, -1,
+            add(faces, skin, texel, u + 2 * ud + uw, v + ud, uw, uh, 0, 0, -1,
                     x1, y1, z0, x0, y1, z0, x1, y0, z0, x0, y0, z0);
             // левая сторона текстуры = передняя грань (стандарт Minecraft)
-            add(faces, skin, texel, u, v + d, d, h, -1, 0, 0,
+            add(faces, skin, texel, u, v + ud, ud, uh, -1, 0, 0,
                     x0, y1, z0, x0, y1, z1, x0, y0, z0, x0, y0, z1);
-            add(faces, skin, texel, u + d + w, v + d, d, h, 1, 0, 0,
+            add(faces, skin, texel, u + ud + uw, v + ud, ud, uh, 1, 0, 0,
                     x1, y1, z1, x1, y1, z0, x1, y0, z1, x1, y0, z0);
-            add(faces, skin, texel, u + d, v, w, d, 0, 1, 0,
+            add(faces, skin, texel, u + ud, v, uw, ud, 0, 1, 0,
                     x0, y1, z0, x1, y1, z0, x0, y1, z1, x1, y1, z1);
-            // низ: верх текстуры — задняя кромка, низ — передняя
-            add(faces, skin, texel, u + d + w, v, w, d, 0, -1, 0,
-                    x0, y0, z0, x1, y0, z0, x0, y0, z1, x1, y0, z1);
+            // низ: верх текстуры — передняя кромка, низ — задняя
+            add(faces, skin, texel, u + ud + uw, v, uw, ud, 0, -1, 0,
+                    x0, y0, z1, x1, y0, z1, x0, y0, z0, x1, y0, z0);
         }
     }
 
@@ -420,17 +460,29 @@ public class SkinView extends JComponent {
                 x1, y0, bOuter, x0, y0, bOuter, x1, y0, bInner, x0, y0, bInner);
     }
 
-    private boolean isEmpty(int u, int v) {
-        int x = Math.round(u * texel);
-        int y = Math.round(v * texel);
-        int size = Math.round(16 * texel);
-        if (x < 0 || y < 0 || x + size > skin.getWidth() || y + size > skin.getHeight()) return true;
-        for (int py = y; py < y + size; py += Math.max(1, (int) texel)) {
-            for (int px = x; px < x + size; px += Math.max(1, (int) texel)) {
-                if ((skin.getRGB(px, py) >>> 24) != 0) return false;
+    private static BufferedImage shaded(BufferedImage source, double amount) {
+        if (amount <= 0.001) return source;
+        int width = source.getWidth();
+        int height = source.getHeight();
+        BufferedImage result = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int argb = source.getRGB(x, y);
+                int alpha = argb >>> 24;
+                if (alpha == 0) continue;
+                int red = (argb >> 16) & 0xFF;
+                int green = (argb >> 8) & 0xFF;
+                int blue = argb & 0xFF;
+                red += (20 - red) * amount;
+                green += (23 - green) * amount;
+                blue += (38 - blue) * amount;
+                result.setRGB(x, y, (alpha << 24)
+                        | (Math.max(0, Math.min(255, (int) Math.round(red))) << 16)
+                        | (Math.max(0, Math.min(255, (int) Math.round(green))) << 8)
+                        | Math.max(0, Math.min(255, (int) Math.round(blue))));
             }
         }
-        return true;
+        return result;
     }
 
     private static void add(List<Face> faces, BufferedImage image, float texel,

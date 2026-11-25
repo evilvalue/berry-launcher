@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 /**
  * Обновление лаунчера. Работающий jar на Windows заменить нельзя, поэтому
@@ -32,6 +34,20 @@ public final class Updater {
 
     public static boolean pending() {
         return staged().isFile();
+    }
+
+    /** Версия из MANIFEST jar — нужна, чтобы старый файл не затёр новую установку. */
+    public static String jarVersion(File file) {
+        if (file == null || !file.isFile()) return "";
+        try (JarFile jar = new JarFile(file)) {
+            Manifest manifest = jar.getManifest();
+            if (manifest != null) {
+                String value = manifest.getMainAttributes().getValue("Implementation-Version");
+                if (value != null && !value.trim().isEmpty()) return value.trim();
+            }
+        } catch (Exception ignored) {
+        }
+        return "";
     }
 
     /** Файл, из которого запущен BerryUp; null — если запущен из папки классов. */
