@@ -1,7 +1,9 @@
 package ru.berrytrip.berryup.ui;
 
 import ru.berrytrip.berryup.Cfg;
+import ru.berrytrip.berryup.Http;
 import ru.berrytrip.berryup.Log;
+import ru.berrytrip.berryup.OptionalMods;
 import ru.berrytrip.berryup.Prism;
 import ru.berrytrip.berryup.Ram;
 import ru.berrytrip.berryup.Store;
@@ -66,12 +68,58 @@ public class SettingsPage extends JPanel {
         mods.add(Widgets.vgap(8));
 
         for (Tweaks.Mod mod : Tweaks.MODS) {
+            final Tweaks.Mod selected = mod;
             Widgets.Toggle toggle = new Widgets.Toggle(mod.label, null, Tweaks.getMod(mod));
             toggle.setAlignmentX(LEFT_ALIGNMENT);
             toggle.setToolTipText(Tweaks.describe(mod));
             toggle.onChange(value -> {
-                Tweaks.setMod(mod, value);
-                applyTweaks(mod.label + (value ? ": включён" : ": выключен"));
+                Prism prism = host.prism();
+                // Для скачиваемого мода всегда проверяем файл в фоне, даже если он уже
+                // лежит в berry-off или кэше: так повреждённый jar будет перекачан.
+                boolean canDownload = value && selected.url != null
+                        && prism != null && prism.hasInstance();
+                Tweaks.setMod(selected, value);
+                Tweaks.save();
+                if (canDownload) {
+                    host.setState("Проверяю " + selected.label + "…", Palette.WARN);
+                    Thread worker = new Thread(() -> {
+                        String failure = "";
+                        try {
+                            OptionalMods.ensure(prism, selected, new Http.Progress() {
+                                private int last = -1;
+
+                                @Override
+                                public void update(long received, long total) {
+                                    int percent = total <= 0 ? 0 : (int) (received * 100 / total);
+                                    if (percent == last) return;
+                                    last = percent;
+                                    SwingUtilities.invokeLater(() -> host.setState(
+                                            "Скачиваю " + selected.label + "… " + percent + "%",
+                                            Palette.WARN));
+                                }
+                            });
+                        } catch (Exception error) {
+                            failure = error.getMessage();
+                        }
+                        final String problem = failure;
+                        SwingUtilities.invokeLater(() -> {
+                            if (!problem.isEmpty()) {
+                                Tweaks.setMod(selected, false);
+                                Tweaks.save();
+                                applyTweaks(selected.label + ": не скачался");
+                                host.setState("Мод не скачался", Palette.ERR);
+                                Log.error(selected.label + ": " + problem);
+                            } else {
+                                applyTweaks(selected.label + ": включён");
+                                host.setState(selected.label + " включён", Palette.OK);
+                            }
+                        });
+                    }, "berry-optional-mod");
+                    worker.setDaemon(true);
+                    worker.start();
+                } else {
+                    applyTweaks(selected.label + (value ? ": включён" : ": выключен"));
+                }
             });
             mods.add(toggle);
             mods.add(Widgets.vgap(2));

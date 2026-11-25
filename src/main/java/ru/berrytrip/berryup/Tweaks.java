@@ -26,12 +26,33 @@ public final class Tweaks {
         public final String hint;
         public final boolean def;
         public final String[] prefixes;
+        public final String url;
+        public final String urlFallback;
+        public final String sha512;
+        public final long size;
+        public final String filename;
 
         Mod(String key, String label, String hint, boolean def, String... prefixes) {
+            this(key, label, hint, def, null, null, null, 0L, null, prefixes);
+        }
+
+        Mod(String key, String label, String hint, boolean def,
+             String url, String sha512, long size, String filename, String... prefixes) {
+            this(key, label, hint, def, url, null, sha512, size, filename, prefixes);
+        }
+
+        Mod(String key, String label, String hint, boolean def,
+             String url, String urlFallback, String sha512, long size, String filename,
+             String... prefixes) {
             this.key = key;
             this.label = label;
             this.hint = hint;
             this.def = def;
+            this.url = url;
+            this.urlFallback = urlFallback;
+            this.sha512 = sha512;
+            this.size = size;
+            this.filename = filename;
             this.prefixes = prefixes;
         }
     }
@@ -40,7 +61,13 @@ public final class Tweaks {
             new Mod("shouldersurfing", "ShoulderSurfing", "вид от плеча", true, "shouldersurfing"),
             new Mod("lights", "LambDynamicLights", "динамический свет", true, "lambdynamiclights"),
             new Mod("tooltips", "Obscure Tooltips", "подсказки предметов", true, "obscure_tooltips"),
-            new Mod("quickskin", "Quick Skin", "скины игроков", true, "quick_skin")
+            new Mod("quickskin", "Quick Skin", "скины игроков", true, "quick_skin"),
+            new Mod("distanthorizons", "Distant Horizons",
+                    "дальние чанки; клиентский мод, по умолчанию выключен", false,
+                    "https://mediafilez.forgecdn.net/files/9004/764/DistantHorizons-3.3.3-1.21.1-fabric-neoforge.jar",
+                    "https://cdn.modrinth.com/data/uCdwusMi/versions/9w34y8ai/DistantHorizons-3.3.3-1.21.1-fabric-neoforge.jar",
+                    "d14b32d3fd143a06514d6ad388eee11e9d657c84e1a937aaf8d033b1137fb43ef8b05cff1011a994cc42f3106823c51234f8bc18d72bb05bc317a20ea83c50ed",
+                    28289212L, "DistantHorizons-3.3.3-1.21.1-fabric-neoforge.jar", "distanthorizons")
     };
 
     /** Нужны только ресурспакам: включаются и выключаются вместе с тумблером ресурспаков. */
@@ -138,7 +165,8 @@ public final class Tweaks {
     }
 
     public static String describe(Mod mod) {
-        return mod.label + " — " + mod.hint + ". Выключение освобождает память, на сервер не влияет.";
+        return mod.label + " — " + mod.hint + ". Выключение освобождает память, на сервер не влияет."
+                + (mod.url == null ? "" : " При включении скачается.");
     }
 
     public static File offDir(Prism prism) {
