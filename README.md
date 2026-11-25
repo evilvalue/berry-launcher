@@ -12,14 +12,17 @@ BerryUp не запускает игру сам и не заменяет Prism: 
 
 ## Скачать
 
-- **BerryUp.zip** — jar + `BerryUp.cmd` + инструкция: <https://evilvalue.github.io/berry/launcher/BerryUp.zip>
-- **BerryUp.jar** — только лаунчер: <https://evilvalue.github.io/berry/launcher/BerryUp.jar>
+- **BerryUp.jar** — весь лаунчер одним файлом: <https://evilvalue.github.io/berry/launcher/BerryUp.jar>
 - Релизы: <https://github.com/evilvalue/berry-launcher/releases>
 - Метаданные версии и хеши: <https://evilvalue.github.io/berry/launcher/latest-java.json>
 
-Распакуй архив в обычную папку (например `C:\BerryUp`) и запусти `BerryUp.cmd`.
-Скрипт сам находит Java: `BERRYUP_JAVA`, `JAVA_HOME`, рантаймы Prism/PineconeMC,
-затем системную. Отдельно ставить Java не нужно.
+Положи jar в обычную папку (например `C:\BerryUp`) и запусти. Отдельно ставить Java
+не нужно: BerryUp запускается на Java из Prism Launcher. Никаких скриптов и архивов
+рядом с лаунчером нет.
+
+На чистой Windows `.jar` может быть ничем не связан: тогда правый клик по файлу →
+«Открыть с помощью» → `javaw.exe` из `%APPDATA%\PrismLauncher\java\java-runtime-*\bin`,
+либо `java -jar BerryUp.jar` из командной строки.
 
 ## Сборка
 
@@ -36,9 +39,8 @@ BerryUp не запускает игру сам и не заменяет Prism: 
 powershell -ExecutionPolicy Bypass -File build\publish-java.ps1 -Notes "что нового"
 ```
 
-Скрипт собирает fat jar, пакует `BerryUp.zip`, считает SHA-256 и пишет
-`latest-java.json`, а затем копирует jar/zip/cmd в `packwiz/launcher` сайта
-(флаг `-NoCopy` — только собрать).
+Скрипт собирает fat jar, считает SHA-256 и пишет `latest-java.json`, а затем копирует
+`BerryUp.jar` и метаданные в `packwiz/launcher` сайта (флаг `-NoCopy` — только собрать).
 
 ## Тестовые режимы
 
@@ -46,7 +48,6 @@ powershell -ExecutionPolicy Bypass -File build\publish-java.ps1 -Notes "что �
 java -jar BerryUp.jar --selftest                  # что найдено: JSON без окна
 java -jar BerryUp.jar --ping [host] [port]        # пинг по протоколу Minecraft
 java -jar BerryUp.jar --render build/render       # вкладки в PNG
-BerryUp.cmd --java                                # какой Java нашёл скрипт
 ```
 
 ## Как это работает
@@ -63,8 +64,9 @@ BerryUp.cmd --java                                # какой Java нашёл �
 - **Память, ресурспаки, шейдеры** — правятся в `instance.cfg`, `options.txt`,
   `config/iris.properties` инстанса.
 - **Обновление BerryUp** — новый jar скачивается в `%LOCALAPPDATA%\BerryUp\update`,
-  сверяется по SHA-256, а `BerryUp.cmd` подменяет файл при следующем запуске
-  (работающий jar на Windows заменить нельзя).
+  сверяется по SHA-256, а затем BerryUp запускает себя вторым процессом
+  (`--apply-update`): тот ждёт выхода старого окна, подменяет файл на месте и
+  открывает новую версию (работающий jar на Windows заменить нельзя).
 
 Настройки лежат в `%APPDATA%\BerryUp` и совместимы с прежней exe-версией;
 `BERRYUP_CONFIG_DIR` подменяет папку настроек для тестов.
@@ -78,9 +80,8 @@ src/main/java/ru/berrytrip/berryup/
   Sync.java       установка сборки, packwiz, запуск игры
   Tweaks.java     моды, ресурспаки, шейдеры, память
   Ping.java       пинг сервера (status)
-  Updater.java    скачивание и проверка нового jar
+  Updater.java    скачивание, проверка и самоподмена jar
   ui/             Swing-интерфейс на FlatLaf
-packaging/        BerryUp.cmd и README.txt для игроков
 build/            publish-java.ps1
 ```
 

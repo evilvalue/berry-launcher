@@ -511,7 +511,7 @@ public class MainFrame extends JFrame {
                 });
                 SwingUtilities.invokeLater(() -> {
                     setState("Обновление скачано", Palette.OK);
-                    banner.showStaged("Перезапусти BerryUp — файл заменится сам");
+                    banner.showStaged("Нажми «Перезапустить» — BerryUp заменит файл сам");
                 });
             } catch (Exception error) {
                 Log.error("Обновление не скачалось: " + error.getMessage());
@@ -519,7 +519,7 @@ public class MainFrame extends JFrame {
                     setState("Обновление не скачалось", Palette.ERR);
                     JOptionPane.showMessageDialog(this,
                             "Не удалось скачать обновление:\n" + error.getMessage()
-                                    + "\n\nМожно скачать архив вручную: " + Cfg.ZIP_URL,
+                                    + "\n\nМожно скачать новый BerryUp.jar вручную: " + Cfg.JAR_URL,
                             Cfg.APP_NAME, JOptionPane.ERROR_MESSAGE);
                 });
             }
@@ -527,33 +527,21 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * Перезапуск для применения обновления. Через BerryUp.cmd файл подменяется сам;
-     * если лаунчер открыт двойным щелчком по jar — команда подскажет, что делать.
+     * Перезапуск для применения обновления: BerryUp запускает второй процесс,
+     * тот дожидается закрытия окна, подменяет jar и открывает новую версию.
      */
     public void restartForUpdate() {
-        if (Updater.launchedFromCmd()) {
-            Log.ok("Перезапуск: BerryUp.cmd заменит jar и откроет новую версию.");
+        try {
+            Updater.apply();
             dispose();
             System.exit(0);
-            return;
+        } catch (Exception error) {
+            Log.error("Обновление не применилось: " + error.getMessage());
+            JOptionPane.showMessageDialog(this,
+                    "Не удалось применить обновление: " + error.getMessage()
+                            + "\n\nСкачай новый BerryUp.jar и замени файл вручную: " + Cfg.JAR_URL,
+                    Cfg.APP_NAME, JOptionPane.ERROR_MESSAGE);
         }
-        File script = Updater.cmdScript();
-        if (script.isFile()) {
-            try {
-                new ProcessBuilder("cmd", "/c", "start", "", script.getAbsolutePath()).start();
-                Log.ok("Открываю BerryUp.cmd — он заменит jar и запустит новую версию.");
-                dispose();
-                System.exit(0);
-            } catch (Exception error) {
-                Log.error("Не удалось запустить BerryUp.cmd: " + error.getMessage());
-            }
-        }
-        JOptionPane.showMessageDialog(this,
-                "Обновление скачано в " + Updater.updateDir().getAbsolutePath()
-                        + "\n\nЗакрой BerryUp и запусти BerryUp.cmd из папки лаунчера — файл заменится сам.\n"
-                        + "Если cmd нет, скачай архив заново: " + Cfg.ZIP_URL,
-                Cfg.APP_NAME, JOptionPane.INFORMATION_MESSAGE);
-        ru.berrytrip.berryup.Sys.openFolder(Updater.jarDir());
     }
 
     /** Выбор prismlauncher.exe / pineconemc.exe вручную — для портативных сборок. */
@@ -679,7 +667,7 @@ public class MainFrame extends JFrame {
             this.staged = false;
             title.setText("Доступна версия " + info.version + "  ·  сейчас " + Cfg.VERSION);
             String text = info.notes == null || info.notes.isEmpty()
-                    ? "Новая версия BerryUp.jar: скачай и перезапусти лаунчер"
+                    ? "Новая версия BerryUp.jar: скачай её прямо в лаунчере"
                     : info.notes;
             notes.setText(text);
             action.setText("Скачать обновление");

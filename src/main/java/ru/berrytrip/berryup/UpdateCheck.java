@@ -13,7 +13,6 @@ public final class UpdateCheck {
         public String version = "";
         public String url = "";
         public String jar = "";
-        public String zip = "";
         public String sha256 = "";
         public String notes = "";
         public long size;
@@ -38,7 +37,6 @@ public final class UpdateCheck {
             info.url = opt(root, "url");
             info.jar = opt(root, "jar");
             if (info.jar.isEmpty()) info.jar = info.url;
-            info.zip = opt(root, "zip");
             info.sha256 = opt(root, "sha256");
             info.notes = opt(root, "notes");
             if (root.has("size") && !root.get("size").isJsonNull()) {

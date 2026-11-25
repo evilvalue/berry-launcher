@@ -12,7 +12,7 @@ public final class Cfg {
 
     public static final String APP_NAME = "BerryUp";
     public static final String BUILD = "BerryTrip";
-    public static final String VERSION = "3.0.1";
+    public static final String VERSION = "3.1.0";
 
     public static final String SITE = "https://evilvalue.github.io/berry/";
     public static final String TELEGRAM = "https://t.me/killberries";
@@ -20,7 +20,6 @@ public final class Cfg {
     public static final String RELEASES = "https://github.com/evilvalue/berry-launcher/releases/latest";
     public static final String UPDATE_URL = "https://evilvalue.github.io/berry/launcher/latest-java.json";
     public static final String JAR_URL = "https://evilvalue.github.io/berry/launcher/BerryUp.jar";
-    public static final String ZIP_URL = "https://evilvalue.github.io/berry/launcher/BerryUp.zip";
     public static final String PACK_URL = "https://evilvalue.github.io/berry/pack.toml";
     public static final String INSTANCE_URL = "https://evilvalue.github.io/berry/launcher/instance.zip";
     public static final String PRISM_URL = "https://prismlauncher.org/download/windows/";

@@ -21,8 +21,8 @@ public final class Main {
     }
 
     /**
-     * Один BerryUp на компьютере. Ждём пару секунд: при обновлении
-     * BerryUp.cmd запускает новую версию, пока старая ещё выходит.
+     * Один BerryUp на компьютере. Ждём пару секунд: при обновлении новая
+     * версия стартует вторым процессом, пока старая ещё выходит.
      */
     private static boolean acquireLock() {
         try {
@@ -46,6 +46,10 @@ public final class Main {
     public static void main(String[] args) throws Exception {
         String mode = args.length > 0 ? args[0].toLowerCase(java.util.Locale.ROOT) : "";
 
+        if (mode.equals("--apply-update")) {
+            if (args.length > 1) Updater.applyUpdate(args[1]);
+            return;
+        }
         if (mode.equals("--selftest")) {
             selftest();
             return;
@@ -109,6 +113,8 @@ public final class Main {
                     Cfg.APP_NAME, javax.swing.JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+
+        Updater.cleanup();
 
         SwingUtilities.invokeLater(() -> {
             MainFrame frame = new MainFrame();
