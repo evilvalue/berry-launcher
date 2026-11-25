@@ -99,7 +99,7 @@ public class SettingsPage extends JPanel {
                                 }
                             });
                         } catch (Exception error) {
-                            failure = error.getMessage();
+                            failure = error.getMessage() == null ? error.toString() : error.getMessage();
                         }
                         final String problem = failure;
                         SwingUtilities.invokeLater(() -> {
