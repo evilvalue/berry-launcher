@@ -20,7 +20,7 @@ public final class Store {
     private Store() {
     }
 
-    public static void load() {
+    public static synchronized void load() {
         VALUES.clear();
         File path = Cfg.configPath();
         if (!path.isFile()) return;
@@ -37,7 +37,7 @@ public final class Store {
         }
     }
 
-    public static void save() {
+    public static synchronized void save() {
         try {
             File dir = Cfg.configDir();
             if (!dir.isDirectory() && !dir.mkdirs()) return;
@@ -51,12 +51,12 @@ public final class Store {
         }
     }
 
-    public static String get(String key, String fallback) {
+    public static synchronized String get(String key, String fallback) {
         String value = VALUES.get(key);
         return value != null ? value : fallback;
     }
 
-    public static void set(String key, String value) {
+    public static synchronized void set(String key, String value) {
         VALUES.put(key, value == null ? "" : value);
     }
 

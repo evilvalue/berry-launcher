@@ -81,10 +81,11 @@ public class AccountPage extends JPanel {
         loginCard.add(Box.createVerticalStrut(4));
 
         hint = Widgets.paragraph(
-                "Нажми «Войти» — откроется бот. Нажми в нём Start, и сервер пустит в игру сам.",
+                "1. Впиши ник.  2. Нажми «Войти» — откроется Telegram.\n"
+                        + "3. Нажми Start: ник привяжется, сервер добавит его в вайтлист.",
                 Palette.reg(9.2f), Palette.MUTED);
         hint.setAlignmentX(LEFT_ALIGNMENT);
-        hint.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        hint.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
         loginCard.add(hint);
         loginCard.add(Box.createVerticalStrut(12));
 
@@ -134,14 +135,17 @@ public class AccountPage extends JPanel {
         actions.setOpaque(false);
         actions.setAlignmentX(LEFT_ALIGNMENT);
         actions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        Widgets.BerryButton openBot = new Widgets.BerryButton("Открыть бота", Widgets.BerryButton.Kind.SECONDARY);
-        openBot.addActionListener(e -> startLogin());
-        check = new Widgets.BerryButton("Проверить вход", Widgets.BerryButton.Kind.GHOST);
-        check.addActionListener(e -> {
-            refresh();
-            int state = Auth.tokenState(host.prism());
-            host.setState(tokenMessage(state), state == Auth.TOKEN_OK ? Palette.OK : Palette.WARN);
+        Widgets.BerryButton openBot = new Widgets.BerryButton("Открыть Telegram", Widgets.BerryButton.Kind.SECONDARY);
+        openBot.addActionListener(e -> {
+            if (!Auth.openPending()) {
+                startLogin();
+            } else {
+                status.setText("Telegram открыт — нажми Start");
+                status.setForeground(Palette.ACCENT);
+            }
         });
+        check = new Widgets.BerryButton("Проверить вход", Widgets.BerryButton.Kind.GHOST);
+        check.addActionListener(e -> pollNow(false));
         logout = new Widgets.BerryButton("Выйти", Widgets.BerryButton.Kind.GHOST);
         logout.addActionListener(e -> {
             Auth.logout(host.prism());
@@ -304,15 +308,15 @@ public class AccountPage extends JPanel {
         loadExisting();
         refresh();
 
-        // токен пишет игра после входа — лаунчер сам подхватит новое состояние
-        javax.swing.Timer poll = new javax.swing.Timer(2500, event -> {
-            int state = Auth.tokenState(host.prism());
-            if (state == lastState) {
-                return;
-            }
-            refresh();
-            if (state == Auth.TOKEN_OK) {
-                host.setState("Вход подтверждён — пустим в игру", Palette.OK);
+        // Пока висит ссылка, тихо спрашиваем сервер: бот уже мог нажать Start.
+        javax.swing.Timer poll = new javax.swing.Timer(2000, event -> {
+            if (Auth.pending()) {
+                pollNow(true);
+            } else {
+                int state = Auth.tokenState(host.prism());
+                if (state != lastState) {
+                    refresh();
+                }
             }
         });
         poll.start();
@@ -341,7 +345,12 @@ public class AccountPage extends JPanel {
         if (state == Auth.TOKEN_OK) {
             status.setText("Вход выполнен" + (nick.isEmpty() ? "" : " · " + nick));
             status.setForeground(Palette.OK);
-            hint.setText("Вход подтверждён: токен в сборке, сервер пустит сразу.");
+            hint.setText("Ник привязан к Telegram и есть в вайтлисте. Запускай игру — пустит сразу.");
+        } else if (Auth.pending()) {
+            String waiting = Auth.pendingNick();
+            status.setText("Жду Start в Telegram" + (waiting.isEmpty() ? "" : " · " + waiting));
+            status.setForeground(Palette.ACCENT);
+            hint.setText("Ссылка уже выдана сервером. Нажми Start в боте — лаунчер увидит вход сам.");
         } else {
             status.setText(state == Auth.TOKEN_EXPIRED ? "Сессия истекла — войди снова"
                     : state == Auth.TOKEN_OTHER_NICK ? "Токен выдан другому нику"
@@ -349,12 +358,13 @@ public class AccountPage extends JPanel {
                     : "Вход не выполнен");
             status.setForeground(Palette.WARN);
             hint.setText(state == Auth.TOKEN_NONE
-                    ? "Нажми «Войти» — откроется бот, нажми Start и запускай игру."
+                    ? "1. Впиши ник.  2. Нажми «Войти».  3. Нажми Start в Telegram — и всё."
                     : "Нажми «Войти» ещё раз: сохранённый токен больше не подходит.");
         }
         boolean signed = state == Auth.TOKEN_OK;
-        login.setText(signed ? "Войти заново" : "Войти через Telegram");
-        logout.setVisible(signed);
+        login.setText(signed ? "Войти заново"
+                : Auth.pending() ? "Открыть Telegram" : "Войти через Telegram");
+        logout.setVisible(signed || Auth.pending());
         remember.setSelected(Store.remember());
         if (nickField.getText().trim().isEmpty()) {
             String name = Auth.nick();
@@ -373,6 +383,8 @@ public class AccountPage extends JPanel {
         return "Токена пока нет";
     }
 
+    private boolean polling;
+
     private void startLogin() {
         String nick = nickField.getText().trim();
         if (nick.isEmpty()) {
@@ -380,16 +392,73 @@ public class AccountPage extends JPanel {
             status.setForeground(Palette.WARN);
             return;
         }
-        String error = Auth.start(host.prism(), nick);
-        if (!error.isEmpty()) {
-            status.setText(error);
-            status.setForeground(Palette.WARN);
+        if (Auth.pending() && Auth.openPending()) {
+            status.setText("Telegram открыт — нажми Start");
+            status.setForeground(Palette.ACCENT);
             return;
         }
-        status.setText("Открыл бота в браузере");
-        status.setForeground(Palette.ACCENT);
-        hint.setText("Ссылка выдана для «" + nick + "». Нажми Start в боте — и запускай игру, "
-                + "сервер пустит автоматически.");
+        login.setEnabled(false);
+        status.setText("Создаю ссылку на сервере…");
+        status.setForeground(Palette.WARN);
+        hint.setText("Сервер проверит ник и выдаст одноразовую ссылку на Telegram.");
+        final String wanted = nick;
+        new Thread(() -> {
+            String error = Auth.start(host.prism(), wanted);
+            SwingUtilities.invokeLater(() -> {
+                login.setEnabled(true);
+                if (!error.isEmpty()) {
+                    status.setText(error);
+                    status.setForeground(Palette.ERR);
+                    hint.setText("Проверь ник, интернет и адрес сервера. Потом нажми «Войти» ещё раз.");
+                    host.setState("Вход не начат", Palette.ERR);
+                    return;
+                }
+                status.setText("Telegram открыт — нажми Start");
+                status.setForeground(Palette.ACCENT);
+                hint.setText("Ссылка выдана для «" + wanted + "». Нажми Start в боте — "
+                        + "лаунчер сам увидит вход, играть можно сразу.");
+                host.setState("Жду Start в Telegram", Palette.ACCENT);
+                refresh();
+            });
+        }, "berry-auth-start").start();
+    }
+
+    /** Ручная проверка, не дожидаясь таймера. */
+    private void pollNow(boolean silent) {
+        if (polling) return;
+        if (!Auth.pending()) {
+            refresh();
+            int state = Auth.tokenState(host.prism());
+            host.setState(tokenMessage(state), state == Auth.TOKEN_OK ? Palette.OK : Palette.WARN);
+            return;
+        }
+        polling = true;
+        if (!silent) {
+            status.setText("Проверяю вход на сервере…");
+            status.setForeground(Palette.WARN);
+        }
+        new Thread(() -> {
+            Auth.Poll result = Auth.poll(host.prism());
+            SwingUtilities.invokeLater(() -> {
+                polling = false;
+                if (result.state == Auth.POLL_OK) {
+                    refresh();
+                    host.setState("Вход подтверждён — пустим в игру", Palette.OK);
+                } else if (result.state == Auth.POLL_ERROR || result.state == Auth.POLL_EXPIRED) {
+                    refresh();
+                    status.setText(result.message.isEmpty() ? "Вход не подтверждён" : result.message);
+                    status.setForeground(Palette.ERR);
+                    hint.setText("Нажми «Войти» ещё раз — сервер выдаст новую ссылку.");
+                    host.setState("Вход не подтверждён", Palette.ERR);
+                } else if (result.state == Auth.POLL_WAITING) {
+                    if (!silent) {
+                        status.setText("Жду Start в Telegram"
+                                + (result.nick.isEmpty() ? "" : " · " + result.nick));
+                        status.setForeground(Palette.ACCENT);
+                    }
+                }
+            });
+        }, "berry-auth-poll").start();
     }
 
     private static File lastDir;

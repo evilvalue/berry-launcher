@@ -60,16 +60,16 @@ public class AboutPage extends JPanel {
         notes.pad(20, 24, 20, 24);
         notes.setAlignmentX(LEFT_ALIGNMENT);
         notes.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
-        notes.add(left(Widgets.caption("ЧТО НОВОГО В 3.10.0", Palette.SURFACE)));
+        notes.add(left(Widgets.caption("ЧТО НОВОГО В 3.11.0", Palette.SURFACE)));
         notes.add(Box.createVerticalStrut(10));
 
         JTextArea list = Widgets.paragraph(
-                "•  Окно 3:2 без прокрутки: всё помещается, размер — за угол окна.\n"
-                        + "•  Шрифт чуть крупнее, скин медленно вращается, как в QuickSkin.\n"
-                        + "•  Боковые и нижние грани развёртки больше не перевёрнуты.\n"
-                        + "•  Скин 128×128 ложится на модель целиком, без обрезки.\n"
-                        + "•  Тёмная и светлая темы, Monocraft и логотип-малина на месте.\n"
-                        + "•  Плащи QuickSkin, drag&drop и проверка размеров остались.",
+                "•  Вход через Telegram стал проще: сервер выдаёт ссылку сам.\n"
+                        + "•  Нажал Start — ник сразу в вайтлисте, лаунчер видит вход.\n"
+                        + "•  Одноразовые ссылки вместо nonce: меньше дыр и путаницы.\n"
+                        + "•  Спокойный нейтральный фон и 3D-модель без сцены.\n"
+                        + "•  Окно 3:2, крупный шрифт и медленное вращение на месте.\n"
+                        + "•  Скины, плащи QuickSkin и drag&drop остались.",
                 Palette.reg(9.3f), Palette.MUTED);
         list.setAlignmentX(LEFT_ALIGNMENT);
         list.setMaximumSize(new Dimension(Integer.MAX_VALUE, 170));

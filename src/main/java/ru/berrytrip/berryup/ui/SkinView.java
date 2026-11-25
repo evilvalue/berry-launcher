@@ -83,7 +83,7 @@ public class SkinView extends JComponent {
     private boolean dropActive;
 
     public SkinView() {
-        setOpaque(true);
+        setOpaque(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         setSkin(defaultSkin());
         setToolTipText("Потяни мышью — модель повернётся");
@@ -231,36 +231,14 @@ public class SkinView extends JComponent {
         }
         if (skin == null) skin = defaultSkin();
 
-        java.awt.Shape stage = Palette.round(0, 0, width, height, 20);
+        // Модель без сцены и фона: карточка лаунчера видна сквозь превью.
         java.awt.Shape oldClip = g.getClip();
-        g.clip(stage);
-
-        // плотная сцена: никакой прозрачности, модель не «висит в воздухе»
+        g.clip(Palette.round(0, 0, width, height, 20));
         boolean dark = Palette.isDark();
-        g.setPaint(new java.awt.GradientPaint(0, 0,
-                dark ? new Color(0x262B35) : new Color(0xF8F9FD), 0, height,
-                dark ? new Color(0x171A21) : new Color(0xEDF0F8)));
-        g.fillRect(0, 0, width, height);
-        Palette.glow(g, width * 0.68f, height * 0.22f, width * 0.65f, Palette.ACCENT, dark ? 30 : 20);
-        Palette.glow(g, width * 0.2f, height * 0.9f, width * 0.55f, Palette.VIOLET, dark ? 20 : 12);
-        g.setColor(new Color(255, 255, 255, dark ? 16 : 90));
-        g.fillOval(width / 2 - width / 3, height / 2 - width / 3, (int) (width * 0.66), (int) (width * 0.66));
 
         float scale = (float) Math.min(width / 25.0, height / 39.0);
         int originX = width / 2;
         int originY = Math.round(height * 0.47f);
-        int feetY = Math.round(originY + (MODEL_HEIGHT / 2f) * scale);
-        int shadowW = Math.max(14, Math.round(16 * scale));
-        int shadowH = Math.max(4, Math.round(4.6f * scale));
-
-        g.setPaint(new RadialGradientPaint(
-                new Point2D.Float(originX, feetY),
-                Math.max(8, shadowW * 0.9f),
-                new float[]{0f, 1f},
-                new Color[]{dark ? new Color(0, 0, 0, 120) : new Color(30, 35, 55, 55),
-                        new Color(0, 0, 0, 0)}));
-        g.fill(new Ellipse2D.Float(originX - shadowW, feetY - shadowH * 1.8f,
-                shadowW * 2f, shadowH * 3.6f));
 
         List<Face> faces = new ArrayList<Face>(BOXES.length * 14);
         buildBody(faces, false);
@@ -353,8 +331,6 @@ public class SkinView extends JComponent {
         }
 
         if (dropActive) {
-            g.setColor(dark ? new Color(14, 16, 20, 200) : new Color(255, 255, 255, 208));
-            g.fillRect(0, 0, width, height);
             g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
                     1f, new float[]{8f, 7f}, 0f));
             g.setColor(Palette.ACCENT);
@@ -362,11 +338,15 @@ public class SkinView extends JComponent {
             g.setFont(Palette.semi(11.5f));
             String title = "Отпусти файл";
             java.awt.FontMetrics fm = g.getFontMetrics();
-            g.drawString(title, (width - fm.stringWidth(title)) / 2, height - 34);
+            int titleX = (width - fm.stringWidth(title)) / 2;
+            g.setColor(dark ? new Color(20, 23, 30, 220) : new Color(255, 255, 255, 230));
+            g.fillRoundRect(titleX - 10, height - 48, fm.stringWidth(title) + 20, 24, 12, 12);
+            g.setColor(Palette.ACCENT);
+            g.drawString(title, titleX, height - 32);
             g.setFont(Palette.reg(9f));
             g.setColor(Palette.MUTED);
             String hint = "скин или плащ · PNG / GIF";
-            g.drawString(hint, (width - g.getFontMetrics().stringWidth(hint)) / 2, height - 19);
+            g.drawString(hint, (width - g.getFontMetrics().stringWidth(hint)) / 2, height - 14);
         }
 
         g.setClip(oldClip);

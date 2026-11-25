@@ -278,7 +278,7 @@ public class MainFrame extends JFrame {
         final int[] sideWidth = {336};
         Widgets.Card sideCard = new Widgets.Card(new BorderLayout());
         sideCard.pad(18, 20, 14, 20);
-        sideCard.add(Widgets.scroll(side), BorderLayout.CENTER);
+        sideCard.add(side, BorderLayout.CENTER);
         JPanel sideHolder = new JPanel(new BorderLayout()) {
             @Override
             public Dimension getPreferredSize() {

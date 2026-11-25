@@ -194,7 +194,7 @@ public final class Widgets {
         }
     }
 
-    /** Фон окна: светлый градиент и два мягких цветных пятна по углам. */
+    /** Фон окна: спокойный нейтральный градиент без цветных пятен. */
     public static class Backdrop extends JPanel {
         public Backdrop(LayoutManager layout) {
             super(layout);
@@ -210,8 +210,6 @@ public final class Widgets {
             int h = getHeight();
             g.setPaint(Palette.backdrop(w, h));
             g.fillRect(0, 0, w, h);
-            Palette.glow(g, w - 40, -20, 460, Palette.ACCENT, 18);
-            Palette.glow(g, -40, h + 30, 420, Palette.VIOLET, 14);
             g.dispose();
         }
     }

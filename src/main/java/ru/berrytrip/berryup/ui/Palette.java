@@ -177,13 +177,11 @@ public final class Palette {
 
     public static Paint backdrop(int w, int h) {
         if (dark) {
-            return new LinearGradientPaint(0, 0, Math.max(1, w), Math.max(1, h),
-                    new float[]{0f, 0.55f, 1f},
-                    new Color[]{new Color(0x191C23), new Color(0x14161B), new Color(0x101217)});
+            return new GradientPaint(0, 0, new Color(0x17191E), 0, Math.max(1, h),
+                    new Color(0x111318));
         }
-        return new LinearGradientPaint(0, 0, Math.max(1, w), Math.max(1, h),
-                new float[]{0f, 0.55f, 1f},
-                new Color[]{new Color(0xF7F8FC), new Color(0xF2F3F8), new Color(0xEFF1F8)});
+        return new GradientPaint(0, 0, new Color(0xF7F8FA), 0, Math.max(1, h),
+                new Color(0xEDEFF4));
     }
 
     public static Shape round(int x, int y, int w, int h, int radius) {

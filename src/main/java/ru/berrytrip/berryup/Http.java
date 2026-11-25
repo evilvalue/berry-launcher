@@ -38,6 +38,50 @@ public final class Http {
         }
     }
 
+    /** Ответ HTTP целиком: код нужен для понятных ошибок входа. */
+    public static final class Result {
+        public final int code;
+        public final String body;
+
+        Result(int code, String body) {
+            this.code = code;
+            this.body = body == null ? "" : body;
+        }
+    }
+
+    /** GET/POST без исключения на 4xx: тело ошибки читает вызывающий. */
+    public static Result call(String method, String url, String json) throws Exception {
+        HttpURLConnection connection = open(url);
+        try {
+            // вход не должен подвешивать окно на минуту, если сервер молчит
+            connection.setConnectTimeout(8000);
+            connection.setReadTimeout(12000);
+            connection.setRequestMethod(method);
+            if (json != null) {
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+                OutputStream out = connection.getOutputStream();
+                out.write(json.getBytes(StandardCharsets.UTF_8));
+                out.close();
+            }
+            int code = connection.getResponseCode();
+            InputStream stream = code >= 200 && code < 300
+                    ? connection.getInputStream() : connection.getErrorStream();
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            if (stream != null) {
+                byte[] chunk = new byte[8192];
+                int read;
+                while ((read = stream.read(chunk)) > 0) buffer.write(chunk, 0, read);
+                stream.close();
+            }
+            String text = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
+            if (!text.isEmpty() && text.charAt(0) == '\uFEFF') text = text.substring(1);
+            return new Result(code, text);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
     /** POST JSON; ответ читается так же, как у GET. */
     public static String post(String url, String json) throws Exception {
         HttpURLConnection connection = open(url);
