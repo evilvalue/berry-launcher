@@ -4,10 +4,13 @@ import ru.berrytrip.berryup.Cfg;
 import ru.berrytrip.berryup.Sys;
 import ru.berrytrip.berryup.UpdateCheck;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 
@@ -22,92 +25,114 @@ public class AboutPage extends JPanel {
         setOpaque(false);
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-        Widgets.Card card = new Widgets.Card();
-        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.pad(18, 20, 18, 20);
-        card.setAlignmentX(LEFT_ALIGNMENT);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 320));
+        Widgets.Card head = new Widgets.Card(new BorderLayout(18, 0));
+        head.pad(22, 24, 22, 24);
+        head.setAlignmentX(LEFT_ALIGNMENT);
+        head.setMaximumSize(new Dimension(Integer.MAX_VALUE, 138));
+        head.tint(Palette.ACCENT);
+        head.add(new Widgets.Logo(62), BorderLayout.WEST);
 
-        JLabel title = Widgets.label("BerryUp " + Cfg.VERSION, Palette.semi(15f), Palette.FG);
+        JPanel headText = new JPanel();
+        headText.setOpaque(false);
+        headText.setLayout(new BoxLayout(headText, BoxLayout.Y_AXIS));
+        JLabel title = Widgets.label("BerryUp " + Cfg.VERSION, Palette.semi(25f), Palette.FG);
         title.setAlignmentX(LEFT_ALIGNMENT);
-        card.add(title);
-        card.add(Box.createVerticalStrut(3));
-
-        JLabel sub = Widgets.label("Надстройка над Prism Launcher  ·  " + Cfg.BUILD + "  ·  " + Cfg.LOADER
-                + "  ·  Minecraft " + Cfg.MC_VERSION, Palette.reg(8.6f), Palette.MUTED);
+        headText.add(title);
+        headText.add(Box.createVerticalStrut(3));
+        JLabel sub = Widgets.label("Надстройка над Prism Launcher  ·  " + Cfg.BUILD
+                + "  ·  Minecraft " + Cfg.MC_VERSION, Palette.reg(9f), Palette.MUTED);
         sub.setAlignmentX(LEFT_ALIGNMENT);
-        card.add(sub);
-        card.add(Box.createVerticalStrut(14));
+        headText.add(sub);
+        headText.add(Box.createVerticalStrut(10));
+        JPanel chips = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        chips.setOpaque(false);
+        chips.setAlignmentX(LEFT_ALIGNMENT);
+        chips.add(new Widgets.Chip("Java 8+", Palette.VIOLET));
+        chips.add(new Widgets.Chip("Windows", Palette.MUTED));
+        chips.add(new Widgets.Chip("~1,4 МБ", Palette.OK));
+        headText.add(chips);
+        head.add(headText, BorderLayout.CENTER);
+        add(head);
+        add(Box.createVerticalStrut(14));
 
-        JLabel caption = Widgets.label("ЧТО НОВОГО В 3.7.0", Palette.semi(8f), Palette.DIM);
-        caption.setAlignmentX(LEFT_ALIGNMENT);
-        card.add(caption);
-        card.add(Box.createVerticalStrut(6));
+        Widgets.Card notes = new Widgets.Card();
+        notes.setLayout(new BoxLayout(notes, BoxLayout.Y_AXIS));
+        notes.pad(20, 24, 20, 24);
+        notes.setAlignmentX(LEFT_ALIGNMENT);
+        notes.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
+        notes.add(left(Widgets.caption("ЧТО НОВОГО В 3.8.0", Palette.SURFACE)));
+        notes.add(Box.createVerticalStrut(10));
 
-        String notes = "Первый запуск: BerryUp переезжает в %LOCALAPPDATA%\\BerryUp, ставит иконку и делает\n"
-                + "ярлыки на рабочем столе и в меню «Пуск» — дальше запуск всегда из одного места.\n"
-                + "Скин теперь видно в 3D: PNG 64×64 или HD 128×128, модель крутится мышью и принимает\n"
-                + "файл перетаскиванием. Окно подстраивается под размер экрана, а масштаб интерфейса\n"
-                + "можно зафиксировать в настройках, если на ноутбуке мелкий или размытый шрифт.";
-        JLabel notesLabel = Widgets.label("<html><div style='width:520px'>" + notes.replace("\n", "<br>") + "</div></html>",
-                Palette.reg(8.8f), Palette.MUTED);
-        notesLabel.setAlignmentX(LEFT_ALIGNMENT);
-        card.add(notesLabel);
-        card.add(Box.createVerticalStrut(12));
+        JTextArea list = Widgets.paragraph(
+                "•  Полностью новый светлый интерфейс: белая боковая панель, крупная типографика, мягкие карточки.\n"
+                        + "•  Скины и плащи QuickSkin: отдельные слоты, 3D-просмотр вместе с плащом на плотном фоне.\n"
+                        + "•  Проводник показывает только PNG и GIF, справа — превью и проверка размера.\n"
+                        + "•  Файл можно перетащить в карточку: лаунчер сам поймёт, скин это или плащ.\n"
+                        + "•  Скин и плащ копируются прямо в пул мода (quickskin/uploads/skins и capes).\n"
+                        + "•  Поддержаны только форматы QuickSkin: 64×32 или 64×64…2048×2048, плащи 64×32…2048×1024.",
+                Palette.reg(9.3f), Palette.MUTED);
+        list.setAlignmentX(LEFT_ALIGNMENT);
+        list.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
+        notes.add(list);
+        notes.add(Box.createVerticalStrut(12));
 
-        status = Widgets.label("Проверка обновлений — по кнопке ниже.", Palette.reg(8.4f), Palette.DIM);
+        status = Widgets.label("Проверка обновлений — по кнопке ниже.", Palette.reg(8.8f), Palette.DIM);
         status.setAlignmentX(LEFT_ALIGNMENT);
-        card.add(status);
-        add(card);
-        add(Box.createVerticalStrut(12));
+        notes.add(status);
+        add(notes);
+        add(Box.createVerticalStrut(14));
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         buttons.setOpaque(false);
         buttons.setAlignmentX(LEFT_ALIGNMENT);
-        buttons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        buttons.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
 
         Widgets.BerryButton check = new Widgets.BerryButton("Проверить обновление", Widgets.BerryButton.Kind.PRIMARY);
         check.addActionListener(e -> {
             status.setText("Проверяю…");
             host.checkUpdates(true);
         });
-        Widgets.BerryButton releases = new Widgets.BerryButton("Релизы", Widgets.BerryButton.Kind.SECONDARY);
-        releases.addActionListener(e -> Sys.openUrl(Cfg.RELEASES));
-        Widgets.BerryButton sources = new Widgets.BerryButton("Исходники", Widgets.BerryButton.Kind.GHOST);
-        sources.addActionListener(e -> Sys.openUrl(Cfg.REPO));
         Widgets.BerryButton site = new Widgets.BerryButton("Сайт сборки", Widgets.BerryButton.Kind.SECONDARY);
         site.addActionListener(e -> Sys.openUrl(Cfg.SITE));
-        Widgets.BerryButton telegram = new Widgets.BerryButton("Telegram", Widgets.BerryButton.Kind.GHOST);
+        Widgets.BerryButton telegram = new Widgets.BerryButton("Telegram", Widgets.BerryButton.Kind.SECONDARY);
         telegram.addActionListener(e -> Sys.openUrl(Cfg.TELEGRAM));
-        Widgets.BerryButton config = new Widgets.BerryButton("Папка настроек", Widgets.BerryButton.Kind.GHOST);
-        config.addActionListener(e -> Sys.openFolder(Cfg.configDir()));
-
+        Widgets.BerryButton releases = new Widgets.BerryButton("Релизы", Widgets.BerryButton.Kind.GHOST);
+        releases.addActionListener(e -> Sys.openUrl(Cfg.RELEASES));
         buttons.add(check);
-        buttons.add(releases);
-        buttons.add(sources);
         buttons.add(site);
         buttons.add(telegram);
-        buttons.add(config);
+        buttons.add(releases);
         add(buttons);
+
+        JPanel buttons2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttons2.setOpaque(false);
+        buttons2.setAlignmentX(LEFT_ALIGNMENT);
+        buttons2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        Widgets.BerryButton sources = new Widgets.BerryButton("Исходники", Widgets.BerryButton.Kind.GHOST);
+        sources.addActionListener(e -> Sys.openUrl(Cfg.REPO));
+        Widgets.BerryButton config = new Widgets.BerryButton("Папка настроек", Widgets.BerryButton.Kind.GHOST);
+        config.addActionListener(e -> Sys.openFolder(Cfg.configDir()));
+        Widgets.BerryButton prism = new Widgets.BerryButton("Скачать Prism Launcher", Widgets.BerryButton.Kind.SECONDARY);
+        prism.addActionListener(e -> Sys.openUrl(Cfg.PRISM_URL));
+        Widgets.BerryButton pine = new Widgets.BerryButton("PineconeMC", Widgets.BerryButton.Kind.GHOST);
+        pine.addActionListener(e -> Sys.openUrl(Cfg.PINE_URL));
+        buttons2.add(sources);
+        buttons2.add(config);
+        buttons2.add(prism);
+        buttons2.add(pine);
+        add(buttons2);
         add(Box.createVerticalStrut(10));
 
         JLabel note = Widgets.label("BerryUp не заменяет Prism Launcher: без него игра не запустится.",
                 Palette.reg(8.4f), Palette.DIM);
         note.setAlignmentX(LEFT_ALIGNMENT);
         add(note);
-
-        JPanel prismLinks = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        prismLinks.setOpaque(false);
-        prismLinks.setAlignmentX(LEFT_ALIGNMENT);
-        prismLinks.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        Widgets.BerryButton prism = new Widgets.BerryButton("Скачать Prism Launcher", Widgets.BerryButton.Kind.SECONDARY);
-        prism.addActionListener(e -> Sys.openUrl(Cfg.PRISM_URL));
-        Widgets.BerryButton pine = new Widgets.BerryButton("Скачать PineconeMC", Widgets.BerryButton.Kind.GHOST);
-        pine.addActionListener(e -> Sys.openUrl(Cfg.PINE_URL));
-        prismLinks.add(prism);
-        prismLinks.add(pine);
-        add(prismLinks);
         add(Box.createVerticalGlue());
+    }
+
+    private JLabel left(JLabel label) {
+        label.setAlignmentX(LEFT_ALIGNMENT);
+        return label;
     }
 
     public void refresh() {

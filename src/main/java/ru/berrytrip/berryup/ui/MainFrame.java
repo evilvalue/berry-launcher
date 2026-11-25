@@ -44,12 +44,22 @@ import java.io.File;
 public class MainFrame extends JFrame {
 
     private static final String[] PAGE_NAMES = {"home", "account", "settings", "diag", "about"};
+    private static final String[] PAGE_TITLES = {"Главное", "Аккаунт", "Настройки", "Диагностика", "О программе"};
+    private static final String[] PAGE_SUBS = {
+            "Сборка, сервер и быстрый запуск — всё на одном экране.",
+            "Вход через Telegram, скин и плащ QuickSkin.",
+            "Моды, графика, память и журнал лаунчера.",
+            "Что найдено на компьютере и хватает ли места.",
+            "Версия BerryUp, обновления и ссылки."
+    };
 
     private Prism prism;
 
     private final Widgets.Segmented nav;
     private final CardLayout pageLayout = new CardLayout();
     private final JPanel pages = new JPanel(pageLayout);
+    private final java.util.Map<String, javax.swing.JScrollPane> pageScrolls =
+            new java.util.HashMap<String, javax.swing.JScrollPane>();
     private final HomePage home;
     private final AccountPage account;
     private final SettingsPage settings;
@@ -57,6 +67,8 @@ public class MainFrame extends JFrame {
     private final AboutPage about;
 
     private final JLabel stateLabel;
+    private final JLabel pageTitle;
+    private final JLabel pageSub;
     private final JLabel serverStatus;
     private final Widgets.Dot serverDot = new Widgets.Dot();
     private final JTextArea serverMotd;
@@ -78,11 +90,11 @@ public class MainFrame extends JFrame {
         // логическое разрешение меньше прежних 1060×700, и низ обрезался.
         java.awt.Rectangle usable = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
                 .getMaximumWindowBounds();
-        int minWidth = Math.min(940, Math.max(620, usable.width - 60));
-        int minHeight = Math.min(600, Math.max(460, usable.height - 60));
+        int minWidth = Math.min(1020, Math.max(720, usable.width - 60));
+        int minHeight = Math.min(640, Math.max(500, usable.height - 60));
         setMinimumSize(new Dimension(minWidth, minHeight));
-        int width = Math.max(minWidth, Math.min(Store.getInt("width", 1200), Math.max(minWidth, usable.width - 40)));
-        int height = Math.max(minHeight, Math.min(Store.getInt("height", 800), Math.max(minHeight, usable.height - 40)));
+        int width = Math.max(minWidth, Math.min(Store.getInt("width", 1280), Math.max(minWidth, usable.width - 40)));
+        int height = Math.max(minHeight, Math.min(Store.getInt("height", 840), Math.max(minHeight, usable.height - 40)));
         setSize(width, height);
         setLocationRelativeTo(null);
         try {
@@ -97,7 +109,7 @@ public class MainFrame extends JFrame {
         }
 
         Widgets.Backdrop root = new Widgets.Backdrop(new BorderLayout(0, 0));
-        root.setBorder(BorderFactory.createEmptyBorder(18, 18, 14, 18));
+        root.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
         setContentPane(root);
 
         // ---------------------------------------------------------- боковая панель
@@ -106,39 +118,40 @@ public class MainFrame extends JFrame {
         side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
         side.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 14));
 
-        Widgets.Card hero = new Widgets.Card();
-        hero.setAlignmentX(LEFT_ALIGNMENT);
-        hero.setLayout(new BorderLayout(13, 0));
-        hero.pad(14, 16, 14, 16);
-        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 88));
-        hero.add(new Widgets.Logo(54), BorderLayout.WEST);
-        JPanel heroText = new JPanel();
-        heroText.setOpaque(false);
-        heroText.setLayout(new BoxLayout(heroText, BoxLayout.Y_AXIS));
-        heroText.add(Widgets.label(Cfg.BUILD, Palette.semi(21f), Palette.FG));
-        JLabel heroSub = Widgets.label("Minecraft " + Cfg.MC_VERSION + "  ·  " + Cfg.LOADER, Palette.reg(8.4f), Palette.MUTED);
-        heroSub.setAlignmentX(LEFT_ALIGNMENT);
-        heroText.add(Box.createVerticalStrut(3));
-        heroText.add(heroSub);
-        JLabel heroVer = Widgets.label("BerryUp " + Cfg.VERSION, Palette.semi(8.2f), Palette.ACCENT_HOVER);
-        heroVer.setAlignmentX(LEFT_ALIGNMENT);
-        heroText.add(Box.createVerticalStrut(2));
-        heroText.add(heroVer);
-        hero.add(heroText, BorderLayout.CENTER);
-        side.add(hero);
-        side.add(Box.createVerticalStrut(14));
+        JPanel brand = new JPanel(new BorderLayout(12, 0));
+        brand.setOpaque(false);
+        brand.setAlignmentX(LEFT_ALIGNMENT);
+        brand.setMaximumSize(new Dimension(Integer.MAX_VALUE, 66));
+        brand.add(new Widgets.Logo(48), BorderLayout.WEST);
+        JPanel brandText = new JPanel();
+        brandText.setOpaque(false);
+        brandText.setLayout(new BoxLayout(brandText, BoxLayout.Y_AXIS));
+        brandText.add(Widgets.label(Cfg.BUILD, Palette.semi(19f), Palette.FG));
+        brandText.add(Box.createVerticalStrut(1));
+        JLabel brandSub = Widgets.label("Minecraft " + Cfg.MC_VERSION + "  ·  NeoForge",
+                Palette.reg(8.6f), Palette.MUTED);
+        brandSub.setAlignmentX(LEFT_ALIGNMENT);
+        brandText.add(brandSub);
+        brandText.add(Box.createVerticalStrut(6));
+        JPanel brandChips = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        brandChips.setOpaque(false);
+        brandChips.add(new Widgets.Chip("BerryUp " + Cfg.VERSION, Palette.ACCENT));
+        brandText.add(brandChips);
+        brand.add(brandText, BorderLayout.CENTER);
+        side.add(brand);
+        side.add(Box.createVerticalStrut(16));
 
         playButton = new Widgets.BerryButton("Играть", Widgets.BerryButton.Kind.PRIMARY);
         playButton.setAlignmentX(LEFT_ALIGNMENT);
-        playButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
-        playButton.setFont(Palette.semi(11.5f));
+        playButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 54));
+        playButton.setFont(Palette.semi(12.5f));
         playButton.addActionListener(e -> play(false));
         side.add(playButton);
         side.add(Box.createVerticalStrut(8));
 
         connectButton = new Widgets.BerryButton("Играть с подключением к серверу", Widgets.BerryButton.Kind.SECONDARY);
         connectButton.setAlignmentX(LEFT_ALIGNMENT);
-        connectButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        connectButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         connectButton.addActionListener(e -> play(true));
         side.add(connectButton);
         side.add(Box.createVerticalStrut(14));
@@ -148,17 +161,21 @@ public class MainFrame extends JFrame {
         serverCard.setAlignmentX(LEFT_ALIGNMENT);
         serverCard.setLayout(new BoxLayout(serverCard, BoxLayout.Y_AXIS));
         serverCard.pad(15, 16, 15, 16);
-        serverCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 214));
+        serverCard.tint(Palette.ACCENT);
+        serverCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 230));
         serverCard.add(Widgets.caption("СЕРВЕР", Palette.SURFACE));
         serverCard.add(Box.createVerticalStrut(8));
 
         serverBox = new JComboBox<String>(serverNames());
         serverBox.setSelectedIndex(Store.serverIndex());
         serverBox.setFont(Palette.reg(9.5f));
-        serverBox.setBackground(Palette.SURFACE_ALT);
+        serverBox.setBackground(Palette.SURFACE);
         serverBox.setForeground(Palette.FG);
         serverBox.setFocusable(false);
-        serverBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        serverBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        serverBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Palette.LINE, 1, true),
+                BorderFactory.createEmptyBorder(1, 4, 1, 4)));
         serverBox.setAlignmentX(LEFT_ALIGNMENT);
         serverBox.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -189,7 +206,8 @@ public class MainFrame extends JFrame {
         serverCard.add(statusRow);
         serverCard.add(Box.createVerticalStrut(6));
 
-        serverMotd = Widgets.paragraph("", Palette.reg(8.5f), Palette.DIM);
+        serverMotd = Widgets.paragraph(selectedServer().endpoint() + "\nпроверяю…",
+                Palette.reg(8.5f), Palette.DIM);
         serverMotd.setAlignmentX(LEFT_ALIGNMENT);
         serverMotd.setRows(3);
         serverCard.add(serverMotd);
@@ -197,7 +215,7 @@ public class MainFrame extends JFrame {
 
         Widgets.BerryButton copy = new Widgets.BerryButton("Скопировать адрес", Widgets.BerryButton.Kind.GHOST);
         copy.setAlignmentX(LEFT_ALIGNMENT);
-        copy.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        copy.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         copy.addActionListener(e -> {
             Cfg.Server server = selectedServer();
             if (server != null && ru.berrytrip.berryup.Sys.copy(server.endpoint())) {
@@ -213,7 +231,7 @@ public class MainFrame extends JFrame {
         JPanel quick = new JPanel(new GridLayout(1, 2, 8, 0));
         quick.setOpaque(false);
         quick.setAlignmentX(LEFT_ALIGNMENT);
-        quick.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        quick.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         updateButton = new Widgets.BerryButton("Обновить сборку", Widgets.BerryButton.Kind.SECONDARY);
         updateButton.addActionListener(e -> updatePack());
         folderButton = new Widgets.BerryButton("Папка сборки", Widgets.BerryButton.Kind.SECONDARY);
@@ -223,14 +241,18 @@ public class MainFrame extends JFrame {
         side.add(quick);
 
         side.add(Box.createVerticalGlue());
-        JLabel sideFoot = Widgets.label("данные: %APPDATA%\\BerryUp", Palette.reg(7.8f), Palette.DIM);
+        JLabel sideFoot = Widgets.label("BerryUp " + Cfg.VERSION + "  ·  %APPDATA%\\BerryUp",
+                Palette.reg(7.8f), Palette.DIM);
         sideFoot.setAlignmentX(LEFT_ALIGNMENT);
         side.add(sideFoot);
 
         // Колонка сужается вместе с окном, а на низком экране прокручивается.
         // Ширину задаём обёртке, высоту берём настоящую — иначе BoxLayout
         // сжимает карточки до нуля, и колонка выглядит пустой.
-        final int[] sideWidth = {340};
+        final int[] sideWidth = {336};
+        Widgets.Card sideCard = new Widgets.Card(new BorderLayout());
+        sideCard.pad(18, 20, 14, 20);
+        sideCard.add(Widgets.scroll(side), BorderLayout.CENTER);
         JPanel sideHolder = new JPanel(new BorderLayout()) {
             @Override
             public Dimension getPreferredSize() {
@@ -239,12 +261,13 @@ public class MainFrame extends JFrame {
             }
         };
         sideHolder.setOpaque(false);
-        sideHolder.add(Widgets.scroll(side), BorderLayout.CENTER);
+        sideHolder.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 16));
+        sideHolder.add(sideCard, BorderLayout.CENTER);
         root.add(sideHolder, BorderLayout.WEST);
         addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentResized(java.awt.event.ComponentEvent event) {
-                int target = Math.max(286, Math.min(340, getWidth() / 3));
+                int target = Math.max(300, Math.min(336, getWidth() / 3));
                 if (sideWidth[0] != target) {
                     sideWidth[0] = target;
                     sideHolder.revalidate();
@@ -278,10 +301,23 @@ public class MainFrame extends JFrame {
         headSite.insets = new java.awt.Insets(0, 8, 0, 0);
         header.add(site, headSite);
 
-        JPanel top = new JPanel(new BorderLayout(0, 10));
+        JPanel titles = new JPanel();
+        titles.setOpaque(false);
+        titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
+        titles.setBorder(BorderFactory.createEmptyBorder(18, 2, 2, 0));
+        pageTitle = Widgets.label(PAGE_TITLES[0], Palette.semi(24f), Palette.FG);
+        pageTitle.setAlignmentX(LEFT_ALIGNMENT);
+        pageSub = Widgets.label(PAGE_SUBS[0], Palette.reg(9.6f), Palette.MUTED);
+        pageSub.setAlignmentX(LEFT_ALIGNMENT);
+        titles.add(pageTitle);
+        titles.add(Box.createVerticalStrut(4));
+        titles.add(pageSub);
+
+        JPanel top = new JPanel(new BorderLayout(0, 12));
         top.setOpaque(false);
         top.add(banner, BorderLayout.NORTH);
-        top.add(header, BorderLayout.SOUTH);
+        top.add(header, BorderLayout.CENTER);
+        top.add(titles, BorderLayout.SOUTH);
 
         home = new HomePage(this);
         account = new AccountPage(this);
@@ -290,12 +326,15 @@ public class MainFrame extends JFrame {
         about = new AboutPage(this);
 
         pages.setOpaque(false);
-        pages.setBorder(BorderFactory.createEmptyBorder(16, 2, 0, 2));
-        pages.add(Widgets.scroll(home), PAGE_NAMES[0]);
-        pages.add(Widgets.scroll(account), PAGE_NAMES[1]);
-        pages.add(settings, PAGE_NAMES[2]); // у «Настроек» своя прокрутка
-        pages.add(Widgets.scroll(diag), PAGE_NAMES[3]);
-        pages.add(Widgets.scroll(about), PAGE_NAMES[4]);
+        pages.setBorder(BorderFactory.createEmptyBorder(14, 2, 0, 2));
+        pageScrolls.put(PAGE_NAMES[0], Widgets.scroll(home));
+        pageScrolls.put(PAGE_NAMES[1], Widgets.scroll(account));
+        pageScrolls.put(PAGE_NAMES[3], Widgets.scroll(diag));
+        pageScrolls.put(PAGE_NAMES[4], Widgets.scroll(about));
+        for (int i = 0; i < PAGE_NAMES.length; i++) {
+            if (i == 2) pages.add(settings, PAGE_NAMES[2]); // у «Настроек» своя прокрутка
+            else pages.add(pageScrolls.get(PAGE_NAMES[i]), PAGE_NAMES[i]);
+        }
 
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
@@ -404,6 +443,13 @@ public class MainFrame extends JFrame {
         int safe = Math.max(0, Math.min(4, index));
         nav.select(safe, false);
         pageLayout.show(pages, PAGE_NAMES[safe]);
+        pageTitle.setText(PAGE_TITLES[safe]);
+        pageSub.setText(PAGE_SUBS[safe]);
+        javax.swing.JScrollPane scroller = pageScrolls.get(PAGE_NAMES[safe]);
+        if (scroller != null) {
+            // сфокусированное поле не должно оставлять страницу промотанной вниз
+            SwingUtilities.invokeLater(() -> scroller.getVerticalScrollBar().setValue(0));
+        }
         if (safe == 1) account.refresh();
         if (safe == 3) diag.refresh();
     }
@@ -736,7 +782,7 @@ public class MainFrame extends JFrame {
         Banner() {
             setOpaque(false);
             setLayout(new BorderLayout(10, 0));
-            setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+            setBorder(BorderFactory.createEmptyBorder(14, 18, 14, 18));
             JPanel text = new JPanel();
             text.setOpaque(false);
             text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
@@ -785,9 +831,9 @@ public class MainFrame extends JFrame {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, 14, Palette.mix(Palette.SURFACE, Palette.ACCENT, 0.12f));
+            Palette.fillRound(g, 0, 0, w, h, 16, Palette.mix(Palette.SURFACE, Palette.ACCENT, 0.07f));
             g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 14, Palette.alpha(Palette.ACCENT, 110));
+            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 16, Palette.alpha(Palette.ACCENT, 80));
             g.dispose();
             super.paintComponent(graphics);
         }
@@ -799,6 +845,6 @@ public class MainFrame extends JFrame {
     }
 
     public Font heading() {
-        return Palette.semi(14f);
+        return Palette.semi(15f);
     }
 }

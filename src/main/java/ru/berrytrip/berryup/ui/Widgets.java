@@ -1,17 +1,16 @@
 package ru.berrytrip.berryup.ui;
 
-import ru.berrytrip.berryup.Cfg;
 import ru.berrytrip.berryup.Sys;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.Scrollable;
-import javax.swing.SwingConstants;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -22,7 +21,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.LayoutManager;
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -37,13 +35,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Мелкие элементы интерфейса, нарисованные вручную под тёмную палитру. */
+/** Элементы интерфейса BerryUp: светлые карточки, плоские кнопки, аккуратные переключатели. */
 public final class Widgets {
 
     private Widgets() {
     }
 
     // ------------------------------------------------------------- текст
+
+    /** Жёсткий вертикальный отступ: в отличие от Box-страта не растягивается. */
+    public static java.awt.Component vgap(int height) {
+        return Box.createRigidArea(new Dimension(0, height));
+    }
 
     public static JLabel label(String text, Font font, Color color) {
         JLabel label = new JLabel(text);
@@ -54,7 +57,7 @@ public final class Widgets {
     }
 
     public static JLabel caption(String text, Color parent) {
-        JLabel label = label(text, Palette.semi(8f), Palette.DIM);
+        JLabel label = label(text, Palette.semi(8.5f), Palette.DIM);
         label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         return label;
     }
@@ -74,11 +77,70 @@ public final class Widgets {
         return area;
     }
 
+    /** Небольшая цветная плашка: «готово к игре», «GIF», «3D» и т. п. */
+    public static class Chip extends JComponent {
+        private String text;
+        private Color color;
+
+        public Chip(String text, Color color) {
+            this.text = text;
+            this.color = color;
+            setOpaque(false);
+            setFont(Palette.semi(8.6f));
+            setForeground(color);
+        }
+
+        public void setText(String text) {
+            this.text = text;
+            revalidate();
+            repaint();
+        }
+
+        public void setColor(Color color) {
+            this.color = color;
+            setForeground(color);
+            repaint();
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            java.awt.FontMetrics metrics = getFontMetrics(getFont());
+            return new Dimension(metrics.stringWidth(text) + 22, 24);
+        }
+
+        @Override
+        public Dimension getMinimumSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public Dimension getMaximumSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g = Palette.quality(graphics);
+            int w = getWidth();
+            int h = getHeight();
+            Palette.fillRound(g, 0, 0, w, h, 12, Palette.mix(Palette.SURFACE, color, 0.10f));
+            g.setStroke(new BasicStroke(1f));
+            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 12, Palette.alpha(color, 60));
+            g.setFont(getFont());
+            g.setColor(color);
+            java.awt.FontMetrics metrics = g.getFontMetrics();
+            g.drawString(text, (w - metrics.stringWidth(text)) / 2,
+                    (h - metrics.getHeight()) / 2 + metrics.getAscent());
+            g.dispose();
+        }
+    }
+
     // ------------------------------------------------------------- карточка
 
     public static class Card extends JPanel {
         private final int radius;
         private boolean outline = true;
+        private Color tint;
 
         public Card() {
             this(new java.awt.BorderLayout());
@@ -86,12 +148,19 @@ public final class Widgets {
 
         public Card(LayoutManager layout) {
             super(layout);
-            radius = 18;
+            radius = 20;
             setOpaque(false);
         }
 
         public Card outline(boolean value) {
             outline = value;
+            repaint();
+            return this;
+        }
+
+        /** Лёгкая цветная подложка карточки: предупреждение, акцент, успех. */
+        public Card tint(Color value) {
+            tint = value;
             repaint();
             return this;
         }
@@ -106,45 +175,50 @@ public final class Widgets {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, radius, Palette.cardGradient(w, h));
+            if (w <= 2 || h <= 2) {
+                g.dispose();
+                return;
+            }
+            java.awt.Paint paint = tint == null
+                    ? Palette.cardGradient(w, h)
+                    : new java.awt.GradientPaint(0, 0, Palette.mix(Palette.SURFACE, tint, 0.07f),
+                    0, h, Palette.mix(Palette.SURFACE, tint, 0.02f));
+            Palette.fillRound(g, 0, 0, w, h, radius, paint);
             if (outline) {
                 g.setStroke(new BasicStroke(1f));
-                Palette.strokeRound(g, 0, 0, w - 1, h - 1, radius, Palette.LINE);
-                // тонкая световая кромка сверху: карточка выглядит объёмнее
-                g.setColor(Palette.alpha(Color.WHITE, 14));
-                g.drawLine(radius, 0, Math.max(radius, w - radius), 0);
+                Palette.strokeRound(g, 0, 0, w - 1, h - 1, radius,
+                        tint == null ? Palette.LINE : Palette.alpha(tint, 70));
             }
             g.dispose();
             super.paintComponent(graphics);
         }
     }
 
-    /** Фон всего окна: тёмный градиент со свечением по краям. */
+    /** Фон окна: светлый градиент и два мягких цветных пятна по углам. */
     public static class Backdrop extends JPanel {
         public Backdrop(LayoutManager layout) {
             super(layout);
             setOpaque(true);
+            setBackground(Palette.BG);
         }
 
         @Override
         protected void paintComponent(Graphics graphics) {
-            // сначала родная заливка (панель непрозрачная), затем градиент поверх неё
             super.paintComponent(graphics);
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
             g.setPaint(Palette.backdrop(w, h));
             g.fillRect(0, 0, w, h);
-            glow(g, w - 40, 0, 430, Palette.ACCENT, 34);
-            glow(g, -30, h + 40, 360, Palette.VIOLET, 26);
+            Palette.glow(g, w - 40, -20, 460, Palette.ACCENT, 18);
+            Palette.glow(g, -40, h + 30, 420, Palette.VIOLET, 14);
             g.dispose();
         }
     }
 
     /**
      * Тело прокручиваемой страницы: растягивается по ширине окна и берёт
-     * высоту содержимого, чтобы при маленьком окне появилась прокрутка,
-     * а не обрезанные карточки.
+     * высоту содержимого, чтобы при маленьком окне появилась прокрутка.
      */
     public static class ScrollBody extends JPanel implements Scrollable {
         public ScrollBody(java.awt.Component view) {
@@ -160,7 +234,7 @@ public final class Widgets {
 
         @Override
         public int getScrollableUnitIncrement(Rectangle visible, int orientation, int direction) {
-            return 24;
+            return 22;
         }
 
         @Override
@@ -179,7 +253,7 @@ public final class Widgets {
         }
     }
 
-    /** Сразу готовый прозрачный scroll pane для страницы или колонки. */
+    /** Прозрачный scroll pane для страницы или колонки. */
     public static javax.swing.JScrollPane scroll(java.awt.Component view) {
         javax.swing.JScrollPane pane = new javax.swing.JScrollPane(new ScrollBody(view));
         pane.setBorder(null);
@@ -187,7 +261,8 @@ public final class Widgets {
         pane.getViewport().setOpaque(false);
         pane.setHorizontalScrollBarPolicy(javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         pane.setVerticalScrollBarPolicy(javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        pane.getVerticalScrollBar().setUnitIncrement(24);
+        pane.getVerticalScrollBar().setUnitIncrement(22);
+        pane.getVerticalScrollBar().setPreferredSize(new Dimension(8, 48));
         return pane;
     }
 
@@ -205,7 +280,7 @@ public final class Widgets {
 
         @Override
         public int getScrollableUnitIncrement(Rectangle visible, int orientation, int direction) {
-            return 24;
+            return 22;
         }
 
         @Override
@@ -262,8 +337,8 @@ public final class Widgets {
         @Override
         public Dimension getPreferredSize() {
             Dimension size = super.getPreferredSize();
-            int extra = kind == Kind.NAV ? 28 : 36;
-            return new Dimension(size.width + extra, Math.max(kind == Kind.NAV ? 36 : 38, size.height + 12));
+            int extra = kind == Kind.NAV ? 26 : 34;
+            return new Dimension(size.width + extra, Math.max(kind == Kind.NAV ? 34 : 40, size.height + 14));
         }
 
         @Override
@@ -275,6 +350,7 @@ public final class Widgets {
             boolean pressed = getModel().isPressed();
             Color fill = null;
             Color text;
+            Color border = null;
 
             switch (kind) {
                 case PRIMARY:
@@ -282,19 +358,22 @@ public final class Widgets {
                     text = Palette.ON_ACCENT;
                     break;
                 case SECONDARY:
-                    fill = hover && enabled ? Palette.HOVER : Palette.SURFACE_ALT;
+                    fill = hover && enabled ? Palette.SURFACE_ALT : Palette.SURFACE;
+                    border = hover && enabled ? Palette.alpha(Palette.ACCENT, 90) : Palette.LINE;
                     text = Palette.FG;
                     break;
                 case DANGER:
-                    fill = hover && enabled ? new Color(66, 30, 38) : new Color(48, 26, 33);
+                    fill = hover && enabled ? Palette.mix(Palette.SURFACE, Palette.ERR, 0.12f)
+                            : Palette.mix(Palette.SURFACE, Palette.ERR, 0.07f);
                     text = Palette.ERR;
                     break;
                 case NAV:
                     if (isSelected()) {
-                        fill = Palette.alpha(Palette.ACCENT, 26);
-                        text = Palette.ACCENT_HOVER;
+                        fill = Palette.SURFACE;
+                        border = Palette.LINE;
+                        text = Palette.FG;
                     } else {
-                        fill = hover ? Palette.alpha(Color.WHITE, 12) : null;
+                        fill = hover ? Palette.alpha(Color.WHITE, 120) : null;
                         text = hover ? Palette.FG : Palette.MUTED;
                     }
                     break;
@@ -308,38 +387,27 @@ public final class Widgets {
             if (!enabled) {
                 text = Palette.DIM;
                 if (fill != null) fill = Palette.SURFACE_ALT;
+                border = Palette.LINE;
             }
 
-            int radius = kind == Kind.NAV ? 9 : 12;
-            if (kind == Kind.PRIMARY && enabled) {
-                Palette.fillRound(g, 1, 2, w - 2, h - 2, radius, Palette.alpha(Palette.ACCENT, 46));
-            }
-
+            int radius = kind == Kind.NAV ? 11 : 12;
             if (fill != null) {
-                if (kind == Kind.PRIMARY && enabled && !pressed) {
-                    Palette.fillRound(g, 0, 0, w, h - 2, radius, Palette.accentGradient(0, 0, w, h));
-                } else {
-                    Palette.fillRound(g, 0, 0, w, Math.max(1, h - (kind == Kind.PRIMARY ? 2 : 0)), radius, fill);
-                }
-                if (kind == Kind.SECONDARY || kind == Kind.DANGER) {
-                    g.setStroke(new BasicStroke(1f));
-                    Palette.strokeRound(g, 0, 0, w - 1, h - 1, radius,
-                            kind == Kind.DANGER ? new Color(88, 40, 52) : Palette.LINE);
-                }
+                Palette.fillRound(g, 0, 0, w, h, radius, fill);
             }
-
+            if (border != null) {
+                g.setStroke(new BasicStroke(1f));
+                Palette.strokeRound(g, 0, 0, w - 1, h - 1, radius, border);
+            }
             if (isFocusOwner()) {
-                g.setStroke(new BasicStroke(1.2f));
-                Palette.strokeRound(g, 1, 1, w - 3, h - 3, radius, Palette.alpha(Palette.ACCENT, 150));
+                g.setStroke(new BasicStroke(1.4f));
+                Palette.strokeRound(g, 1, 1, w - 3, h - 3, radius, Palette.alpha(Palette.ACCENT, 140));
             }
 
-            Font font = getFont();
-            g.setFont(font);
+            g.setFont(getFont());
             g.setColor(text);
             java.awt.FontMetrics metrics = g.getFontMetrics();
-            int textWidth = metrics.stringWidth(getText());
-            int x = (w - textWidth) / 2;
-            int y = (h - (kind == Kind.PRIMARY ? 2 : 0) - metrics.getHeight()) / 2 + metrics.getAscent();
+            int x = (w - metrics.stringWidth(getText())) / 2;
+            int y = (h - metrics.getHeight()) / 2 + metrics.getAscent();
             g.drawString(getText(), Math.max(6, x), y);
             g.dispose();
         }
@@ -362,7 +430,8 @@ public final class Widgets {
             setOpaque(false);
             setFocusable(true);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setPreferredSize(new Dimension(240, hint == null || hint.isEmpty() ? 34 : 42));
+            setPreferredSize(new Dimension(260, hint == null || hint.isEmpty() ? 36 : 44));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, hint == null || hint.isEmpty() ? 36 : 44));
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
@@ -435,37 +504,39 @@ public final class Widgets {
             int w = getWidth();
             int h = getHeight();
 
-            int trackW = 38;
-            int trackH = 22;
+            int trackW = 42;
+            int trackH = 24;
             int tx = w - trackW - 2;
             int ty = hint == null || hint.isEmpty() ? (h - trackH) / 2 : 8;
 
             Color track = selected ? Palette.ACCENT : (hover ? Palette.HOVER : Palette.SURFACE_ALT);
             if (!isEnabled()) track = Palette.SURFACE_ALT;
-            Palette.fillRound(g, tx, ty, trackW, trackH, 11, track);
+            Palette.fillRound(g, tx, ty, trackW, trackH, 12, track);
             if (!selected) {
                 g.setStroke(new BasicStroke(1f));
-                Palette.strokeRound(g, tx, ty, trackW - 1, trackH - 1, 11, Palette.LINE);
+                Palette.strokeRound(g, tx, ty, trackW - 1, trackH - 1, 12, Palette.LINE);
             }
-            int knob = 16;
+            int knob = 18;
             int kx = selected ? tx + trackW - knob - 3 : tx + 3;
-            g.setColor(new Color(255, 255, 255, selected ? 245 : 150));
+            g.setColor(new Color(0, 0, 0, 22));
+            g.fillOval(kx, ty + 4, knob, knob);
+            g.setColor(Color.WHITE);
             g.fillOval(kx, ty + 3, knob, knob);
 
             if (focus) {
-                g.setStroke(new BasicStroke(1.2f));
-                Palette.strokeRound(g, 0, 0, w - 1, h - 1, 9, Palette.alpha(Palette.ACCENT, 130));
+                g.setStroke(new BasicStroke(1.4f));
+                Palette.strokeRound(g, 0, 0, w - 1, h - 1, 10, Palette.alpha(Palette.ACCENT, 120));
             }
 
             int textW = Math.max(20, tx - 12);
-            g.setFont(Palette.reg(9.5f));
+            g.setFont(Palette.reg(10f));
             g.setColor(isEnabled() ? Palette.FG : Palette.DIM);
-            g.drawString(clip(title, g, textW), 0, hint == null || hint.isEmpty() ? ty + 15 : 15);
+            g.drawString(clip(title, g, textW), 0, hint == null || hint.isEmpty() ? ty + 16 : 15);
 
             if (hint != null && !hint.isEmpty()) {
-                g.setFont(Palette.reg(8f));
+                g.setFont(Palette.reg(8.8f));
                 g.setColor(Palette.DIM);
-                g.drawString(clip(hint, g, textW), 0, 30);
+                g.drawString(clip(hint, g, textW), 0, 31);
             }
             g.dispose();
         }
@@ -491,7 +562,7 @@ public final class Widgets {
             setOpaque(false);
             setFocusable(true);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setPreferredSize(new Dimension(400, 64));
+            setPreferredSize(new Dimension(300, 72));
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
@@ -548,52 +619,45 @@ public final class Widgets {
                 return;
             }
 
-            Palette.fillRound(g, 0, 0, w, h, 16, hover ? Palette.HOVER : Palette.cardGradient(w, h));
+            Palette.fillRound(g, 0, 0, w, h, 18,
+                    hover ? Palette.mix(Palette.SURFACE, Palette.ACCENT, 0.04f) : Palette.SURFACE);
             g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 16, hover || focus ? Palette.alpha(Palette.ACCENT, 130) : Palette.LINE);
+            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 18,
+                    hover || focus ? Palette.alpha(Palette.ACCENT, 120) : Palette.LINE);
 
-            int badge = 38;
-            int bx = 16;
+            Color tone = glyph == Glyph.TELEGRAM ? Palette.TELEGRAM : Palette.ACCENT;
+            int badge = 42;
+            int bx = 14;
             int by = (h - badge) / 2;
-            if (glyph == Glyph.TELEGRAM) {
-                Palette.fillRound(g, bx, by, badge, badge, 12, Palette.alpha(Palette.TELEGRAM, 60));
-                g.setColor(Palette.TELEGRAM);
-                g.setStroke(new BasicStroke(1f));
-                Palette.strokeRound(g, bx, by, badge, badge, 12, Palette.alpha(Palette.TELEGRAM, 110));
-            } else {
-                Palette.fillRound(g, bx, by, badge, badge, 12, Palette.alpha(Palette.ACCENT, 40));
-                g.setColor(Palette.ACCENT);
-                g.setStroke(new BasicStroke(1f));
-                Palette.strokeRound(g, bx, by, badge, badge, 12, Palette.alpha(Palette.ACCENT, 110));
-            }
-            g.setColor(glyph == Glyph.TELEGRAM ? Palette.TELEGRAM : Palette.ACCENT_HOVER);
+            Palette.fillRound(g, bx, by, badge, badge, 13, Palette.mix(Palette.SURFACE, tone, 0.12f));
+
+            g.setColor(tone);
             g.setStroke(new BasicStroke(1.7f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             int cx = bx + badge / 2;
             int cy = by + badge / 2;
             if (glyph == Glyph.TELEGRAM) {
-                int[] xs = {cx - 9, cx + 9, cx + 3, cx - 2};
-                int[] ys = {cy + 2, cy - 7, cy + 8, cy + 2};
-                java.awt.Polygon plane = new java.awt.Polygon(xs, ys, 4);
-                g.fillPolygon(plane);
+                int[] xs = {cx - 8, cx + 8, cx + 3, cx - 2};
+                int[] ys = {cy + 1, cy - 6, cy + 6, cy + 1};
+                g.fillPolygon(new java.awt.Polygon(xs, ys, 4));
             } else {
-                int r = 9;
+                int r = 8;
                 g.drawOval(cx - r, cy - r, r * 2, r * 2);
                 g.drawLine(cx - r, cy, cx + r, cy);
                 g.drawOval(cx - r / 2, cy - r, r, r * 2);
             }
 
-            int textX = bx + badge + 14;
-            int textW = Math.max(60, w - textX - 44);
+            int textX = bx + badge + 13;
+            int textW = Math.max(60, w - textX - 34);
             g.setFont(Palette.semi(10.5f));
             g.setColor(Palette.FG);
-            g.drawString(clip(caption, g, textW), textX, h / 2 - 3);
-            g.setFont(Palette.reg(8.5f));
+            g.drawString(clip(caption, g, textW), textX, h / 2 - 2);
+            g.setFont(Palette.reg(9f));
             g.setColor(Palette.MUTED);
-            g.drawString(clip(detail, g, textW), textX, h / 2 + 15);
+            g.drawString(clip(detail, g, textW), textX, h / 2 + 16);
 
-            int ax = w - 26;
+            int ax = w - 22;
             int ay = h / 2;
-            g.setColor(hover ? Palette.ACCENT : Palette.DIM);
+            g.setColor(hover || focus ? Palette.ACCENT : Palette.DIM);
             g.setStroke(new BasicStroke(1.7f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g.drawLine(ax - 5, ay, ax + 4, ay);
             g.drawLine(ax, ay - 4, ax + 4, ay);
@@ -627,18 +691,13 @@ public final class Widgets {
         protected void paintComponent(Graphics graphics) {
             Graphics2D g = Palette.quality(graphics);
             int size = Math.min(getWidth(), getHeight());
-            // мягкое ягодное свечение под иконкой
-            for (int i = 3; i >= 1; i--) {
-                g.setColor(Palette.alpha(Palette.ACCENT, 10));
-                g.fillOval(-i * 2, size / 6 - i * 2, size + i * 4, size + i * 4);
-            }
             if (image != null) {
                 g.drawImage(image, 0, 0, size, size, null);
             } else {
                 g.setColor(Palette.ACCENT);
-                g.fillOval(0, 0, size, size);
-                g.setColor(Palette.BG);
-                g.setFont(Palette.semi(size * 0.45f));
+                g.fillRoundRect(0, 0, size, size, size / 3, size / 3);
+                g.setColor(Color.WHITE);
+                g.setFont(Palette.bold(size * 0.45f));
                 g.drawString("B", size / 3, (int) (size * 0.68));
             }
             g.dispose();
@@ -693,9 +752,9 @@ public final class Widgets {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, 13, Palette.alpha(Palette.BG_SOFT, 230));
+            Palette.fillRound(g, 0, 0, w, h, 16, Palette.SURFACE_ALT);
             g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 13, Palette.LINE);
+            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 16, Palette.LINE);
             g.dispose();
             super.paintComponent(graphics);
         }
@@ -716,7 +775,7 @@ public final class Widgets {
             this.value = Math.max(min, Math.min(this.max, value));
             setOpaque(false);
             setFocusable(true);
-            setPreferredSize(new Dimension(200, 28));
+            setPreferredSize(new Dimension(200, 30));
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             addMouseListener(new MouseAdapter() {
                 @Override
@@ -775,28 +834,27 @@ public final class Widgets {
             int w = getWidth();
             int h = getHeight();
             int pad = 12;
-            int trackY = h / 2 - 2;
+            int trackY = h / 2 - 3;
             int trackW = Math.max(1, w - pad * 2);
-            Palette.fillRound(g, pad, trackY, trackW, 4, 2, Palette.SURFACE_ALT);
+            Palette.fillRound(g, pad, trackY, trackW, 6, 3, Palette.SURFACE_ALT);
             int filled = (int) (trackW * (value - min) / (double) (max - min));
-            Palette.fillRound(g, pad, trackY, Math.max(4, filled), 4, 2, Palette.ACCENT);
-            int knob = 16;
+            Palette.fillRound(g, pad, trackY, Math.max(6, filled), 6, 3, Palette.ACCENT);
+            int knob = 18;
             int kx = pad + filled - knob / 2;
-            g.setColor(Palette.BG);
-            g.fillOval(kx - 2, trackY - 4, knob + 4, knob + 4);
+            g.setColor(new Color(0, 0, 0, 20));
+            g.fillOval(kx, trackY - 4, knob, knob);
+            g.setColor(Color.WHITE);
+            g.fillOval(kx, trackY - 6, knob, knob);
             g.setColor(Palette.ACCENT);
-            g.fillOval(kx, trackY - 2, knob, knob);
+            g.setStroke(new BasicStroke(1.5f));
+            g.drawOval(kx, trackY - 6, knob, knob);
             g.dispose();
         }
     }
 
-    /** Мягкое радиальное свечение без видимой границы круга. */
+    /** Мягкое радиальное свечение (совместимость со старыми экранами). */
     static void glow(Graphics2D g, int cx, int cy, int radius, Color color, int alpha) {
-        g.setPaint(new java.awt.RadialGradientPaint(
-                new java.awt.geom.Point2D.Float(cx, cy), Math.max(1, radius),
-                new float[]{0f, 1f},
-                new Color[]{Palette.alpha(color, alpha), Palette.alpha(color, 0)}));
-        g.fillOval(cx - radius, cy - radius, radius * 2, radius * 2);
+        Palette.glow(g, cx, cy, radius, color, alpha);
     }
 
     static String clip(String text, Graphics2D g, int width) {
@@ -826,27 +884,15 @@ public final class Widgets {
         @Override
         protected void paintComponent(Graphics graphics) {
             Graphics2D g = Palette.quality(graphics);
-            int size = Math.min(10, Math.min(getWidth(), getHeight()));
+            int size = Math.min(9, Math.min(getWidth(), getHeight()));
+            int x = (getWidth() - size) / 2;
+            int y = (getHeight() - size) / 2;
+            g.setColor(Palette.alpha(color, 40));
+            g.fillOval(x - 3, y - 3, size + 6, size + 6);
             g.setColor(color);
-            g.fillOval(0, (getHeight() - size) / 2, size, size);
+            g.fillOval(x, y, size, size);
             g.dispose();
         }
     }
 
-    public static void main(String[] args) {
-        // быстрый визуальный прогон виджетов без запуска лаунчера
-        javax.swing.SwingUtilities.invokeLater(() -> {
-            JPanel panel = new JPanel();
-            panel.setBackground(Palette.BG);
-            panel.setLayout(new FlowLayout());
-            panel.add(new BerryButton("Играть", BerryButton.Kind.PRIMARY));
-            panel.add(new BerryButton("Обновить сборку", BerryButton.Kind.SECONDARY));
-            panel.add(new LinkCard("Сайт сборки", "evilvalue.github.io/berry", Cfg.SITE, Glyph.SITE));
-            javax.swing.JFrame frame = new javax.swing.JFrame("widgets");
-            frame.setContentPane(panel);
-            frame.setSize(600, 200);
-            frame.setLocationRelativeTo(null);
-            frame.setVisible(true);
-        });
-    }
 }

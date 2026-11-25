@@ -1,6 +1,6 @@
 package ru.berrytrip.berryup;
 
-import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import ru.berrytrip.berryup.ui.MainFrame;
 
 import javax.swing.JFrame;
@@ -111,14 +111,17 @@ public final class Main {
         // Без нативных библиотек FlatLaf: ничего не распаковывается во временную папку.
         System.setProperty("flatlaf.useNativeLibrary", "false");
         System.setProperty("flatlaf.useWindowDecorations", "false");
-        FlatDarkLaf.setup();
+        FlatLightLaf.setup();
+        UIManager.put("Component.arc", 12);
+        UIManager.put("Button.arc", 12);
+        UIManager.put("TextComponent.arc", 10);
         UIManager.put("Component.focusWidth", 0);
         UIManager.put("ScrollBar.showButtons", false);
-        UIManager.put("ScrollBar.width", 10);
-        UIManager.put("ScrollBar.thumbArc", 8);
-        UIManager.put("ScrollBar.thumbInsets", new java.awt.Insets(2, 2, 2, 2));
-        UIManager.put("ToolTip.background", new java.awt.Color(28, 31, 39));
-        UIManager.put("ToolTip.foreground", new java.awt.Color(236, 239, 245));
+        UIManager.put("ScrollBar.width", 8);
+        UIManager.put("ScrollBar.thumbArc", 999);
+        UIManager.put("ScrollBar.thumbInsets", new java.awt.Insets(1, 1, 1, 1));
+        UIManager.put("ToolTip.background", new java.awt.Color(0xFFFFFF));
+        UIManager.put("ToolTip.foreground", new java.awt.Color(0x15171F));
 
         final boolean[] allowed = {true};
         try {
@@ -201,9 +204,12 @@ public final class Main {
         System.setProperty("berryup.render", "1");
         System.setProperty("flatlaf.useNativeLibrary", "false");
         System.setProperty("flatlaf.useWindowDecorations", "false");
-        FlatDarkLaf.setup();
+        FlatLightLaf.setup();
+        UIManager.put("Component.arc", 12);
+        UIManager.put("Button.arc", 12);
+        UIManager.put("TextComponent.arc", 10);
         UIManager.put("Component.focusWidth", 0);
-        UIManager.put("ScrollBar.width", 10);
+        UIManager.put("ScrollBar.width", 8);
 
         final MainFrame[] holder = new MainFrame[1];
         SwingUtilities.invokeAndWait(() -> {

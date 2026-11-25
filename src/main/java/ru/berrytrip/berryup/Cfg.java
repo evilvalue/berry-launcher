@@ -12,7 +12,7 @@ public final class Cfg {
 
     public static final String APP_NAME = "BerryUp";
     public static final String BUILD = "BerryTrip";
-    public static final String VERSION = "3.7.0";
+    public static final String VERSION = "3.8.0";
 
     public static final String SITE = "https://evilvalue.github.io/berry/";
     public static final String TELEGRAM = "https://t.me/killberries";

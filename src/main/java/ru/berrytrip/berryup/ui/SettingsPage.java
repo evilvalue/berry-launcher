@@ -60,10 +60,10 @@ public class SettingsPage extends JPanel {
         mods.setLayout(new BoxLayout(mods, BoxLayout.Y_AXIS));
         mods.pad(14, 16, 14, 16);
         mods.add(leftAligned(Widgets.caption("КЛИЕНТСКИЕ МОДЫ", Palette.SURFACE)));
-        mods.add(Box.createVerticalStrut(2));
+        mods.add(Widgets.vgap(2));
         mods.add(leftAligned(Widgets.label("На сервер не влияет — только на твой клиент.",
                 Palette.reg(8.5f), Palette.DIM)));
-        mods.add(Box.createVerticalStrut(10));
+        mods.add(Widgets.vgap(10));
 
         for (Tweaks.Mod mod : Tweaks.MODS) {
             Widgets.Toggle toggle = new Widgets.Toggle(mod.label, mod.hint, Tweaks.getMod(mod));
@@ -74,18 +74,18 @@ public class SettingsPage extends JPanel {
                 applyTweaks(mod.label + (value ? ": включён" : ": выключен"));
             });
             mods.add(toggle);
-            mods.add(Box.createVerticalStrut(2));
+            mods.add(Widgets.vgap(2));
         }
 
-        mods.add(Box.createVerticalStrut(6));
+        mods.add(Widgets.vgap(6));
         JPanel rule = new JPanel();
         rule.setBackground(Palette.LINE);
         rule.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
         rule.setPreferredSize(new Dimension(10, 1));
         mods.add(rule);
-        mods.add(Box.createVerticalStrut(8));
+        mods.add(Widgets.vgap(8));
         mods.add(leftAligned(Widgets.caption("ВСЕГДА ВКЛЮЧЕНЫ", Palette.SURFACE)));
-        mods.add(Box.createVerticalStrut(4));
+        mods.add(Widgets.vgap(4));
         JLabel always = Widgets.label("<html><div style='width:300px'>"
                 + Tweaks.lockedText().replace("\n", "<br>") + "</div></html>", Palette.reg(8f), Palette.DIM);
         mods.add(leftAligned(always));
@@ -106,7 +106,7 @@ public class SettingsPage extends JPanel {
         gfx.setLayout(new BoxLayout(gfx, BoxLayout.Y_AXIS));
         gfx.pad(14, 16, 14, 16);
         gfx.add(leftAligned(Widgets.caption("ГРАФИКА", Palette.SURFACE)));
-        gfx.add(Box.createVerticalStrut(8));
+        gfx.add(Widgets.vgap(8));
         Widgets.Toggle packs = new Widgets.Toggle("Ресурспаки", "20 шт. · меньше видеопамяти", Tweaks.getBool("packs", true));
         packs.setAlignmentX(LEFT_ALIGNMENT);
         packs.setToolTipText("Отключает все ресурспаки в options.txt: меньше видеопамяти и быстрее загрузка.");
@@ -123,9 +123,9 @@ public class SettingsPage extends JPanel {
             applyTweaks(value ? "Шейдеры включены" : "Шейдеры выключены");
         });
         gfx.add(shaders);
-        gfx.setMaximumSize(new Dimension(Integer.MAX_VALUE, 132));
+        gfx.setMaximumSize(new Dimension(Integer.MAX_VALUE, 172));
         right.add(gfx);
-        right.add(Box.createVerticalStrut(12));
+        right.add(Widgets.vgap(12));
 
         // ---------------------------------------------------------- память
         totalRam = Math.max(8, Ram.gb());
@@ -141,7 +141,7 @@ public class SettingsPage extends JPanel {
         memoryValue = Widgets.label("", Palette.semi(11f), Palette.ACCENT);
         memoryHead.add(memoryValue, BorderLayout.EAST);
         memory.add(memoryHead);
-        memory.add(Box.createVerticalStrut(6));
+        memory.add(Widgets.vgap(6));
 
         JPanel sliderRow = new JPanel(new BorderLayout(8, 0));
         sliderRow.setOpaque(false);
@@ -159,7 +159,7 @@ public class SettingsPage extends JPanel {
         sliderRow.add(memorySlider, BorderLayout.CENTER);
         sliderRow.add(plus, BorderLayout.EAST);
         memory.add(sliderRow);
-        memory.add(Box.createVerticalStrut(8));
+        memory.add(Widgets.vgap(8));
 
         JPanel applyRow = new JPanel(new BorderLayout(8, 0));
         applyRow.setOpaque(false);
@@ -173,16 +173,16 @@ public class SettingsPage extends JPanel {
         });
         applyRow.add(apply, BorderLayout.EAST);
         memory.add(applyRow);
-        memory.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+        memory.setMaximumSize(new Dimension(Integer.MAX_VALUE, 172));
         right.add(memory);
-        right.add(Box.createVerticalStrut(12));
+        right.add(Widgets.vgap(12));
 
         // ---------------------------------------------------------- лаунчер
         Widgets.Card behaviour = new Widgets.Card();
         behaviour.setLayout(new BoxLayout(behaviour, BoxLayout.Y_AXIS));
         behaviour.pad(14, 16, 14, 16);
         behaviour.add(leftAligned(Widgets.caption("ЛАУНЧЕР", Palette.SURFACE)));
-        behaviour.add(Box.createVerticalStrut(6));
+        behaviour.add(Widgets.vgap(6));
 
         javax.swing.JPanel pathColumn = new javax.swing.JPanel();
         pathColumn.setOpaque(false);
@@ -194,9 +194,9 @@ public class SettingsPage extends JPanel {
         launcherPath = Widgets.label("не найден", Palette.reg(7.6f), Palette.DIM);
         launcherPath.setAlignmentX(LEFT_ALIGNMENT);
         pathColumn.add(launcherName);
-        pathColumn.add(Box.createVerticalStrut(2));
+        pathColumn.add(Widgets.vgap(2));
         pathColumn.add(launcherPath);
-        pathColumn.add(Box.createVerticalStrut(6));
+        pathColumn.add(Widgets.vgap(6));
 
         javax.swing.JPanel pathButtons = new javax.swing.JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         pathButtons.setOpaque(false);
@@ -211,7 +211,7 @@ public class SettingsPage extends JPanel {
         pathButtons.add(data);
         pathColumn.add(pathButtons);
         behaviour.add(pathColumn);
-        behaviour.add(Box.createVerticalStrut(4));
+        behaviour.add(Widgets.vgap(4));
 
         Widgets.Toggle autoUpdate = new Widgets.Toggle("Обновления при запуске", "проверять latest.json", Store.autoUpdate());
         autoUpdate.setAlignmentX(LEFT_ALIGNMENT);
@@ -241,7 +241,7 @@ public class SettingsPage extends JPanel {
         shortcut.setToolTipText("Пересоздать ярлык BerryUp — запуск сразу правильной Java из Prism, без чёрного окна.");
         shortcut.addActionListener(e -> host.makeShortcut());
         shortcutRow.add(shortcut, BorderLayout.EAST);
-        behaviour.add(Box.createVerticalStrut(6));
+        behaviour.add(Widgets.vgap(6));
         behaviour.add(shortcutRow);
 
         JPanel scaleRow = new JPanel(new BorderLayout(8, 0));
@@ -267,9 +267,9 @@ public class SettingsPage extends JPanel {
             host.applyUiScale(value);
         });
         scaleRow.add(scaleBox, BorderLayout.EAST);
-        behaviour.add(Box.createVerticalStrut(6));
+        behaviour.add(Widgets.vgap(6));
         behaviour.add(scaleRow);
-        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 392));
+        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 444));
         right.add(behaviour);
         right.add(Box.createVerticalGlue());
 
@@ -283,7 +283,7 @@ public class SettingsPage extends JPanel {
         // ---------------------------------------------------------- журнал
         Widgets.Card logCard = new Widgets.Card(new BorderLayout());
         logCard.pad(12, 16, 12, 16);
-        logCard.setPreferredSize(new Dimension(100, 220));
+        logCard.setPreferredSize(new Dimension(100, 230));
 
         JPanel logHead = new JPanel(new BorderLayout());
         logHead.setOpaque(false);
@@ -410,6 +410,8 @@ public class SettingsPage extends JPanel {
         wrapper.setOpaque(false);
         wrapper.setAlignmentX(LEFT_ALIGNMENT);
         wrapper.add(component);
+        java.awt.Dimension pref = component.getPreferredSize();
+        wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, Math.max(1, pref.height)));
         return wrapper;
     }
 }
