@@ -60,11 +60,12 @@ public class AboutPage extends JPanel {
         notes.pad(20, 24, 20, 24);
         notes.setAlignmentX(LEFT_ALIGNMENT);
         notes.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
-        notes.add(left(Widgets.caption("ЧТО НОВОГО В 3.9.0", Palette.SURFACE)));
+        notes.add(left(Widgets.caption("ЧТО НОВОГО В 3.9.1", Palette.SURFACE)));
         notes.add(Box.createVerticalStrut(10));
 
         JTextArea list = Widgets.paragraph(
-                "•  Пиксельный Monocraft — шрифт в духе Minecraft, с полной кириллицей.\n"
+                "•  Скин 128×128 теперь ложится на модель без искажений, как в QuickSkin.\n"
+                        + "•  Пиксельный Monocraft — шрифт в духе Minecraft, с полной кириллицей.\n"
                         + "•  Тёмная и светлая темы: переключатель в «Настройках», выбор запоминается.\n"
                         + "•  Пиксельная малина вместо логотипа — в лаунчере и на сайте.\n"
                         + "•  Скин Стива по умолчанию в 3D-превью и поворот модели по вертикали вниз.\n"

@@ -73,9 +73,9 @@ public class SkinView extends JComponent {
     private BufferedImage cape;
     private float texel = 1f;
     private float capeTexel = 1f;
-    private double yaw = -28;
-    private double pitch = -8;
-    private long lastDrag;
+    // как в QuickSkin: спокойный разворот влево-вперёд, без автовращения
+    private double yaw = 20;
+    private double pitch = 0;
     private int dragX;
     private int dragY;
     private boolean dragging;
@@ -93,13 +93,11 @@ public class SkinView extends JComponent {
                 dragging = true;
                 dragX = e.getX();
                 dragY = e.getY();
-                lastDrag = System.currentTimeMillis();
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
                 dragging = false;
-                lastDrag = System.currentTimeMillis();
             }
         });
         addMouseMotionListener(new MouseMotionAdapter() {
@@ -110,20 +108,14 @@ public class SkinView extends JComponent {
                 pitch = Math.max(-24, Math.min(24, pitch - (e.getY() - dragY) * 0.35));
                 dragX = e.getX();
                 dragY = e.getY();
-                lastDrag = System.currentTimeMillis();
                 repaint();
             }
         });
 
-        // лёгкое вращение, пока модель не трогают; плащ покачивается всегда
+        // модель стоит на месте, как в QuickSkin; двигается только плащ
         new Timer(40, event -> {
             if (!isShowing() || dragging) return;
-            if (System.currentTimeMillis() - lastDrag < 1800) {
-                if (cape != null) repaint();
-                return;
-            }
-            yaw += 0.5;
-            repaint();
+            if (cape != null) repaint();
         }).start();
     }
 
@@ -131,7 +123,8 @@ public class SkinView extends JComponent {
     public void setSkin(BufferedImage image) {
         if (image == null) {
             skin = defaultSkin();
-            texel = 1f;
+            // дефолтный скин тоже может быть HD: 128×128 — это texel 2
+            texel = Math.max(1f, skin.getWidth() / 64f);
         } else {
             BufferedImage fixed = image;
             if (image.getHeight() < 64) {
@@ -177,7 +170,6 @@ public class SkinView extends JComponent {
     public void setAngles(double yawDegrees, double pitchDegrees) {
         yaw = yawDegrees;
         pitch = Math.max(-24, Math.min(24, pitchDegrees));
-        lastDrag = System.currentTimeMillis();
         repaint();
     }
 
