@@ -44,6 +44,7 @@ public class AccountPage extends JPanel {
 
     private File pickedSkin;
     private BufferedImage previewImage;
+    private int lastState = -1;
 
     public AccountPage(MainFrame host) {
         this.host = host;
@@ -64,7 +65,7 @@ public class AccountPage extends JPanel {
         loginCard.add(Box.createVerticalStrut(4));
 
         hint = Widgets.paragraph(
-                "Нажми «Войти» — бот получит ник из лаунчера и пришлёт код. Ссылка одноразовая.",
+                "Нажми «Войти» — откроется бот. Нажми в нём Start, и сервер пустит в игру сам.",
                 Palette.reg(9f), Palette.MUTED);
         hint.setAlignmentX(LEFT_ALIGNMENT);
         hint.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
@@ -115,7 +116,7 @@ public class AccountPage extends JPanel {
         bottomRow.setAlignmentX(LEFT_ALIGNMENT);
         bottomRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
         JLabel fine = Widgets.label(
-                "Код вводится в игре: /verify 123456. Регистрация — только по кнопке «Войти».",
+                "Вход без кодов: ссылка из лаунчера + Start в боте. Ссылку никому не пересылай.",
                 Palette.reg(8f), Palette.DIM);
         bottomRow.add(fine, BorderLayout.WEST);
 
@@ -209,6 +210,19 @@ public class AccountPage extends JPanel {
         add(Box.createVerticalGlue());
 
         refresh();
+
+        // токен пишет игра после входа — лаунчер сам подхватит новое состояние
+        javax.swing.Timer poll = new javax.swing.Timer(2500, event -> {
+            int state = Auth.tokenState(host.prism());
+            if (state == lastState) {
+                return;
+            }
+            refresh();
+            if (state == Auth.TOKEN_OK) {
+                host.setState("Вход подтверждён — пустим в игру", Palette.OK);
+            }
+        });
+        poll.start();
     }
 
     private JLabel left(JLabel label) {
@@ -218,12 +232,13 @@ public class AccountPage extends JPanel {
 
     public void refresh() {
         int state = Auth.tokenState(host.prism());
+        lastState = state;
         String nick = Auth.tokenNick(host.prism());
         if (nick.isEmpty()) nick = Auth.nick();
         if (state == Auth.TOKEN_OK) {
             status.setText("Вход выполнен" + (nick.isEmpty() ? "" : " · " + nick));
             status.setForeground(Palette.OK);
-            hint.setText("Токен сохранён в сборке. Сервер проверит его при входе в игру.");
+            hint.setText("Вход подтверждён: токен в сборке, сервер пустит сразу.");
         } else {
             status.setText(state == Auth.TOKEN_EXPIRED ? "Сессия истекла — войди снова"
                     : state == Auth.TOKEN_OTHER_NICK ? "Токен выдан другому нику"
@@ -231,8 +246,8 @@ public class AccountPage extends JPanel {
                     : "Вход не выполнен");
             status.setForeground(Palette.WARN);
             hint.setText(state == Auth.TOKEN_NONE
-                    ? "Нажми «Войти» — бот получит ник из лаунчера и пришлёт код."
-                    : "Нажми «Войти» и получи новый код: сохранённый токен больше не подходит.");
+                    ? "Нажми «Войти» — откроется бот, нажми Start и запускай игру."
+                    : "Нажми «Войти» ещё раз: сохранённый токен больше не подходит.");
         }
         boolean signed = state == Auth.TOKEN_OK;
         login.setText(signed ? "Войти заново" : "Войти через Telegram");
@@ -249,7 +264,7 @@ public class AccountPage extends JPanel {
 
     private String tokenMessage(int state) {
         if (state == Auth.TOKEN_OK) return "Вход подтверждён";
-        if (state == Auth.TOKEN_EXPIRED) return "Токен истёк — нужен новый код";
+        if (state == Auth.TOKEN_EXPIRED) return "Токен истёк — войди снова";
         if (state == Auth.TOKEN_OTHER_NICK) return "Токен выдан другому нику";
         if (state == Auth.TOKEN_BROKEN) return "Файл токена повреждён";
         return "Токена пока нет";
@@ -270,8 +285,8 @@ public class AccountPage extends JPanel {
         }
         status.setText("Открыл бота в браузере");
         status.setForeground(Palette.ACCENT_HOVER);
-        hint.setText("Ссылка выдана для «" + nick + "». Нажми в боте Start — он пришлёт код, "
-                + "затем зайди в игру и напиши: /verify КОД.");
+        hint.setText("Ссылка выдана для «" + nick + "». Нажми Start в боте — и запускай игру, "
+                + "сервер пустит автоматически.");
     }
 
     private void pickSkin() {

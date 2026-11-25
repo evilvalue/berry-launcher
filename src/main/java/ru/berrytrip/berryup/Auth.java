@@ -12,8 +12,9 @@ import java.util.Base64;
 
 /**
  * Вход через Telegram. Лаунчер формирует ссылку на бота с ником и одноразовым
- * nonce, кладёт nonce в сборку и открывает бота. Бот выдаёт код, игрок вводит
- * /verify в игре — мод сохраняет токен. Токен привязан к нику и Telegram.
+ * nonce, кладёт nonce в сборку и открывает бота. После Start в боте сервер сам
+ * сверяет nonce и пускает в игру — кодов нет. Дальше работает токен, привязанный
+ * к нику и Telegram, поэтому следующие запуски входят без Telegram.
  */
 public final class Auth {
 
@@ -23,7 +24,7 @@ public final class Auth {
     public static final int TOKEN_OTHER_NICK = 3;
     public static final int TOKEN_BROKEN = 4;
 
-    /** Ссылка живёт 30 минут: столько же, сколько код бота. */
+    /** Сколько nonce считается живым: после этого сервер ссылку не примет. */
     public static final long LINK_TTL_MS = 30 * 60_000L;
 
     private static final String ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -177,8 +178,8 @@ public final class Auth {
     }
 
     private static String nonce() {
-        StringBuilder builder = new StringBuilder(12);
-        for (int i = 0; i < 12; i++) {
+        StringBuilder builder = new StringBuilder(24);
+        for (int i = 0; i < 24; i++) {
             builder.append(ALPHABET.charAt(RANDOM.nextInt(ALPHABET.length())));
         }
         return builder.toString();
