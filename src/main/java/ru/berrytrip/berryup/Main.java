@@ -193,7 +193,7 @@ public final class Main {
         });
         Thread.sleep(600);
 
-        String[] names = {"main", "settings", "diag", "about"};
+        String[] names = {"main", "account", "settings", "diag", "about"};
         for (int i = 0; i < names.length; i++) {
             final int index = i;
             SwingUtilities.invokeAndWait(() -> {

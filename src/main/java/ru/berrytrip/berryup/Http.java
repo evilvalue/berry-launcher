@@ -38,6 +38,35 @@ public final class Http {
         }
     }
 
+    /** POST JSON; ответ читается так же, как у GET. */
+    public static String post(String url, String json) throws Exception {
+        HttpURLConnection connection = open(url);
+        try {
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            OutputStream out = connection.getOutputStream();
+            out.write(json.getBytes(StandardCharsets.UTF_8));
+            out.close();
+            int code = connection.getResponseCode();
+            InputStream stream = code >= 200 && code < 300
+                    ? connection.getInputStream() : connection.getErrorStream();
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            if (stream != null) {
+                byte[] chunk = new byte[8192];
+                int read;
+                while ((read = stream.read(chunk)) > 0) buffer.write(chunk, 0, read);
+                stream.close();
+            }
+            if (code < 200 || code >= 300) throw new Exception("HTTP " + code);
+            String text = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
+            if (!text.isEmpty() && text.charAt(0) == '\uFEFF') text = text.substring(1);
+            return text;
+        } finally {
+            connection.disconnect();
+        }
+    }
+
     public static void download(String url, File target, Progress progress) throws Exception {
         HttpURLConnection connection = open(url);
         try {

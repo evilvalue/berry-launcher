@@ -12,10 +12,11 @@ public final class Cfg {
 
     public static final String APP_NAME = "BerryUp";
     public static final String BUILD = "BerryTrip";
-    public static final String VERSION = "3.2.2";
+    public static final String VERSION = "3.4.0";
 
     public static final String SITE = "https://evilvalue.github.io/berry/";
     public static final String TELEGRAM = "https://t.me/killberries";
+    public static final String BOT_URL = "https://t.me/killberriesbot";
     public static final String REPO = "https://github.com/evilvalue/berry-launcher";
     public static final String RELEASES = "https://github.com/evilvalue/berry-launcher/releases/latest";
     public static final String UPDATE_URL = "https://evilvalue.github.io/berry/launcher/latest-java.json";

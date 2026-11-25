@@ -1,5 +1,6 @@
 package ru.berrytrip.berryup.ui;
 
+import ru.berrytrip.berryup.Auth;
 import ru.berrytrip.berryup.Cfg;
 import ru.berrytrip.berryup.Log;
 import ru.berrytrip.berryup.Ping;
@@ -41,7 +42,7 @@ import java.io.File;
 /** Главное окно BerryUp: слева запуск и сервер, справа вкладки. */
 public class MainFrame extends JFrame {
 
-    private static final String[] PAGE_NAMES = {"home", "settings", "diag", "about"};
+    private static final String[] PAGE_NAMES = {"home", "account", "settings", "diag", "about"};
 
     private Prism prism;
 
@@ -49,6 +50,7 @@ public class MainFrame extends JFrame {
     private final CardLayout pageLayout = new CardLayout();
     private final JPanel pages = new JPanel(pageLayout);
     private final HomePage home;
+    private final AccountPage account;
     private final SettingsPage settings;
     private final DiagPage diag;
     private final AboutPage about;
@@ -216,7 +218,7 @@ public class MainFrame extends JFrame {
         root.add(side, BorderLayout.WEST);
 
         // ---------------------------------------------------------- правая часть
-        nav = new Widgets.Segmented("Главное", "Настройки", "Диагностика", "О программе");
+        nav = new Widgets.Segmented("Главное", "Аккаунт", "Настройки", "Диагностика", "О программе");
         nav.onSelect(this::showPage);
         nav.setAlignmentX(LEFT_ALIGNMENT);
 
@@ -238,6 +240,7 @@ public class MainFrame extends JFrame {
         top.add(header, BorderLayout.SOUTH);
 
         home = new HomePage(this);
+        account = new AccountPage(this);
         settings = new SettingsPage(this);
         diag = new DiagPage(this);
         about = new AboutPage(this);
@@ -245,9 +248,10 @@ public class MainFrame extends JFrame {
         pages.setOpaque(false);
         pages.setBorder(BorderFactory.createEmptyBorder(16, 2, 0, 2));
         pages.add(home, PAGE_NAMES[0]);
-        pages.add(settings, PAGE_NAMES[1]);
-        pages.add(diag, PAGE_NAMES[2]);
-        pages.add(about, PAGE_NAMES[3]);
+        pages.add(account, PAGE_NAMES[1]);
+        pages.add(settings, PAGE_NAMES[2]);
+        pages.add(diag, PAGE_NAMES[3]);
+        pages.add(about, PAGE_NAMES[4]);
 
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
@@ -304,6 +308,10 @@ public class MainFrame extends JFrame {
         return home;
     }
 
+    public AccountPage account() {
+        return account;
+    }
+
     public SettingsPage settings() {
         return settings;
     }
@@ -340,6 +348,7 @@ public class MainFrame extends JFrame {
         updateButton.setEnabled(ready);
         folderButton.setEnabled(prism != null);
         home.refresh();
+        account.refresh();
         settings.refresh();
         diag.refresh();
         about.refresh();
@@ -348,10 +357,11 @@ public class MainFrame extends JFrame {
     }
 
     public void showPage(int index) {
-        int safe = Math.max(0, Math.min(3, index));
+        int safe = Math.max(0, Math.min(4, index));
         nav.select(safe, false);
         pageLayout.show(pages, PAGE_NAMES[safe]);
-        if (safe == 2) diag.refresh();
+        if (safe == 1) account.refresh();
+        if (safe == 3) diag.refresh();
     }
 
     public void setTab(int index) {
@@ -375,6 +385,9 @@ public class MainFrame extends JFrame {
                     "Сначала установи сборку на вкладке «Главное».",
                     Cfg.APP_NAME, JOptionPane.INFORMATION_MESSAGE);
             return;
+        }
+        if (!ru.berrytrip.berryup.Mods.ensure(prism)) {
+            Log.error("Мод входа не установлен — сервер попросит /verify");
         }
         try {
             Sync.launch(prism, connect, serverBox.getSelectedIndex());
@@ -702,7 +715,7 @@ public class MainFrame extends JFrame {
 
     /** Для тестов: выбрать вкладку и отрисовать её в PNG. */
     public JComponent[] tabs() {
-        return new JComponent[]{home, settings, diag, about};
+        return new JComponent[]{home, account, settings, diag, about};
     }
 
     public Font heading() {

@@ -1,5 +1,10 @@
 package ru.berrytrip.berryup;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -177,6 +182,31 @@ public final class Prism {
 
     public File minecraftDir() {
         return new File(instanceDir(), "minecraft");
+    }
+
+    /** Ник активного аккаунта Prism — чтобы подставить его в заявку. */
+    public String accountName() {
+        try {
+            File file = new File(dataDir, "accounts.json");
+            if (!file.isFile()) return "";
+            JsonObject json = JsonParser.parseString(Sys.read(file)).getAsJsonObject();
+            String active = json.has("activeAccount") ? json.get("activeAccount").getAsString() : "";
+            JsonArray accounts = json.has("accounts") ? json.getAsJsonArray("accounts") : null;
+            if (accounts == null) return "";
+            String first = "";
+            for (JsonElement element : accounts) {
+                JsonObject account = element.getAsJsonObject();
+                if (!account.has("profile") || account.get("profile").isJsonNull()) continue;
+                String name = account.getAsJsonObject("profile").get("name").getAsString();
+                if (first.isEmpty()) first = name;
+                if (account.has("active") && account.get("active").getAsBoolean()) return name;
+                if (!active.isEmpty() && account.has("id")
+                        && active.equals(account.get("id").getAsString())) return name;
+            }
+            return first;
+        } catch (Exception error) {
+            return "";
+        }
     }
 
     public File modsDir() {
