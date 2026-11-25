@@ -184,6 +184,13 @@ public class SettingsPage extends JPanel {
         behaviour.add(leftAligned(Widgets.caption("ЛАУНЧЕР", Palette.SURFACE)));
         behaviour.add(Widgets.vgap(6));
 
+        Widgets.Toggle darkTheme = new Widgets.Toggle("Тёмная тема", "пиксельный стиль, как в игре",
+                Palette.isDark());
+        darkTheme.setAlignmentX(LEFT_ALIGNMENT);
+        darkTheme.setToolTipText("Переключить светлое и тёмное оформление. Окно быстро пересоберётся.");
+        darkTheme.onChange(host::applyTheme);
+        behaviour.add(darkTheme);
+
         javax.swing.JPanel pathColumn = new javax.swing.JPanel();
         pathColumn.setOpaque(false);
         pathColumn.setAlignmentX(LEFT_ALIGNMENT);
@@ -269,7 +276,7 @@ public class SettingsPage extends JPanel {
         scaleRow.add(scaleBox, BorderLayout.EAST);
         behaviour.add(Widgets.vgap(6));
         behaviour.add(scaleRow);
-        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 444));
+        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 500));
         right.add(behaviour);
         right.add(Box.createVerticalGlue());
 

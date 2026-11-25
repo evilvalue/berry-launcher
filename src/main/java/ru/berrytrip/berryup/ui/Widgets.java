@@ -690,6 +690,8 @@ public final class Widgets {
         @Override
         protected void paintComponent(Graphics graphics) {
             Graphics2D g = Palette.quality(graphics);
+            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                    java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
             int size = Math.min(getWidth(), getHeight());
             if (image != null) {
                 g.drawImage(image, 0, 0, size, size, null);

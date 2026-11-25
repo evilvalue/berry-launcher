@@ -128,7 +128,7 @@ public class MainFrame extends JFrame {
         brandText.setLayout(new BoxLayout(brandText, BoxLayout.Y_AXIS));
         brandText.add(Widgets.label(Cfg.BUILD, Palette.semi(19f), Palette.FG));
         brandText.add(Box.createVerticalStrut(1));
-        JLabel brandSub = Widgets.label("Minecraft " + Cfg.MC_VERSION + "  ·  NeoForge",
+        JLabel brandSub = Widgets.label("Minecraft " + Cfg.MC_VERSION,
                 Palette.reg(8.6f), Palette.MUTED);
         brandSub.setAlignmentX(LEFT_ALIGNMENT);
         brandText.add(brandSub);
@@ -472,6 +472,21 @@ public class MainFrame extends JFrame {
                     ok ? "Ярлык BerryUp на рабочем столе и в «Пуске»" : "Ярлык не создан — смотри журнал",
                     ok ? Palette.OK : Palette.ERR));
         }, "berry-shortcut").start();
+    }
+
+    /** Переключение светлой/тёмной темы: пересобираем окно с новыми цветами. */
+    public void applyTheme(boolean dark) {
+        Store.setBool("theme.dark", dark);
+        Store.set("width", String.valueOf(getWidth()));
+        Store.set("height", String.valueOf(getHeight()));
+        Store.save();
+        Palette.applyTheme(dark);
+        ru.berrytrip.berryup.Main.setupLook(dark);
+        dispose();
+        SwingUtilities.invokeLater(() -> {
+            MainFrame frame = new MainFrame();
+            frame.setVisible(true);
+        });
     }
 
     /** Масштаб интерфейса: сохраняем и перезапускаемся с нужным sun.java2d.uiScale. */

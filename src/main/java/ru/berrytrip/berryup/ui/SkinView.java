@@ -1,5 +1,6 @@
 package ru.berrytrip.berryup.ui;
 
+import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.Timer;
 import java.awt.AlphaComposite;
@@ -18,6 +19,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -104,7 +106,8 @@ public class SkinView extends JComponent {
             @Override
             public void mouseDragged(MouseEvent e) {
                 yaw += (e.getX() - dragX) * 0.7;
-                pitch = Math.max(-24, Math.min(24, pitch + (e.getY() - dragY) * 0.35));
+                // вертикаль инвертирована: тянем вверх — смотрим снизу
+                pitch = Math.max(-24, Math.min(24, pitch - (e.getY() - dragY) * 0.35));
                 dragX = e.getX();
                 dragY = e.getY();
                 lastDrag = System.currentTimeMillis();
@@ -178,8 +181,24 @@ public class SkinView extends JComponent {
         repaint();
     }
 
-    /** Силуэт в ягодных цветах — пока свой скин не выбран. */
+    private static BufferedImage steve;
+    private static boolean steveLoaded;
+
+    /** Скин Стива из ресурсов лаунчера (128×128, стандартная развёртка). */
     public static BufferedImage defaultSkin() {
+        if (!steveLoaded) {
+            steveLoaded = true;
+            try (InputStream stream = SkinView.class.getResourceAsStream("/steve.png")) {
+                if (stream != null) steve = ImageIO.read(stream);
+            } catch (Exception ignored) {
+            }
+        }
+        if (steve != null) return steve;
+        return placeholderSkin();
+    }
+
+    /** Запасной силуэт в ягодных цветах, если ресурс скина не нашёлся. */
+    private static BufferedImage placeholderSkin() {
         BufferedImage image = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
         g.setColor(new Color(0xF1C8A4));
@@ -214,13 +233,15 @@ public class SkinView extends JComponent {
         java.awt.Shape oldClip = g.getClip();
         g.clip(stage);
 
-        // плотная светлая сцена: никакой прозрачности, модель не «висит в воздухе»
-        g.setPaint(new java.awt.GradientPaint(0, 0, new Color(0xF8F9FD), 0, height,
-                new Color(0xEDF0F8)));
+        // плотная сцена: никакой прозрачности, модель не «висит в воздухе»
+        boolean dark = Palette.isDark();
+        g.setPaint(new java.awt.GradientPaint(0, 0,
+                dark ? new Color(0x262B35) : new Color(0xF8F9FD), 0, height,
+                dark ? new Color(0x171A21) : new Color(0xEDF0F8)));
         g.fillRect(0, 0, width, height);
-        Palette.glow(g, width * 0.68f, height * 0.22f, width * 0.65f, Palette.ACCENT, 20);
-        Palette.glow(g, width * 0.2f, height * 0.9f, width * 0.55f, Palette.VIOLET, 12);
-        g.setColor(new Color(255, 255, 255, 90));
+        Palette.glow(g, width * 0.68f, height * 0.22f, width * 0.65f, Palette.ACCENT, dark ? 30 : 20);
+        Palette.glow(g, width * 0.2f, height * 0.9f, width * 0.55f, Palette.VIOLET, dark ? 20 : 12);
+        g.setColor(new Color(255, 255, 255, dark ? 16 : 90));
         g.fillOval(width / 2 - width / 3, height / 2 - width / 3, (int) (width * 0.66), (int) (width * 0.66));
 
         float scale = (float) Math.min(width / 25.0, height / 39.0);
@@ -234,7 +255,8 @@ public class SkinView extends JComponent {
                 new Point2D.Float(originX, feetY),
                 Math.max(8, shadowW * 0.9f),
                 new float[]{0f, 1f},
-                new Color[]{new Color(30, 35, 55, 55), new Color(30, 35, 55, 0)}));
+                new Color[]{dark ? new Color(0, 0, 0, 120) : new Color(30, 35, 55, 55),
+                        new Color(0, 0, 0, 0)}));
         g.fill(new Ellipse2D.Float(originX - shadowW, feetY - shadowH * 1.8f,
                 shadowW * 2f, shadowH * 3.6f));
 
@@ -329,7 +351,7 @@ public class SkinView extends JComponent {
         }
 
         if (dropActive) {
-            g.setColor(new Color(255, 255, 255, 208));
+            g.setColor(dark ? new Color(14, 16, 20, 200) : new Color(255, 255, 255, 208));
             g.fillRect(0, 0, width, height);
             g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
                     1f, new float[]{8f, 7f}, 0f));
