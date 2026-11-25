@@ -82,6 +82,10 @@ public class MainFrame extends JFrame {
         } catch (Exception ignored) {
         }
         prism = Prism.find();
+        // «Запомнить меня» выключено — прошлый токен не переиспользуем
+        if (prism != null && prism.hasInstance() && !Store.remember()) {
+            Auth.logout(prism);
+        }
 
         Widgets.Backdrop root = new Widgets.Backdrop(new BorderLayout(0, 0));
         root.setBorder(BorderFactory.createEmptyBorder(18, 18, 14, 18));

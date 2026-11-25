@@ -3,11 +3,13 @@ package ru.berrytrip.berryup.ui;
 import ru.berrytrip.berryup.Auth;
 import ru.berrytrip.berryup.Log;
 import ru.berrytrip.berryup.Skins;
+import ru.berrytrip.berryup.Store;
 import ru.berrytrip.berryup.Sys;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.JCheckBox;
 import javax.swing.BoxLayout;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -37,6 +39,7 @@ public class AccountPage extends JPanel {
     private final Widgets.BerryButton openBot;
     private final Widgets.BerryButton check;
     private final Widgets.BerryButton applySkin;
+    private final JCheckBox remember;
     private final JPanel preview;
 
     private File pickedSkin;
@@ -61,7 +64,7 @@ public class AccountPage extends JPanel {
         loginCard.add(Box.createVerticalStrut(4));
 
         hint = Widgets.paragraph(
-                "Нажми «Войти» — откроется бот со ссылкой на твой ник. Он пришлёт код, введи его в игре.",
+                "Нажми «Войти» — бот получит ник из лаунчера и пришлёт код. Ссылка одноразовая.",
                 Palette.reg(9f), Palette.MUTED);
         hint.setAlignmentX(LEFT_ALIGNMENT);
         hint.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
@@ -84,7 +87,28 @@ public class AccountPage extends JPanel {
         login.addActionListener(e -> startLogin());
         nickRow.add(login, BorderLayout.EAST);
         loginCard.add(nickRow);
-        loginCard.add(Box.createVerticalStrut(10));
+        loginCard.add(Box.createVerticalStrut(8));
+
+        remember = new JCheckBox("Запомнить меня на этом компьютере");
+        remember.setOpaque(false);
+        remember.setFont(Palette.reg(9f));
+        remember.setForeground(Palette.MUTED);
+        remember.setFocusPainted(false);
+        remember.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        remember.setAlignmentX(LEFT_ALIGNMENT);
+        remember.setSelected(Store.remember());
+        remember.setToolTipText("Токен входа лежит в сборке. Выключи на общем компьютере — тогда при следующем запуске BerryUp попросит вход заново.");
+        remember.addActionListener(e -> {
+            Store.setRemember(remember.isSelected());
+            Store.save();
+            host.setState(remember.isSelected()
+                            ? "Вход сохранится на этом компьютере"
+                            : "Вход не сохранится: при следующем запуске попросим заново",
+                    Palette.MUTED);
+            refresh();
+        });
+        loginCard.add(remember);
+        loginCard.add(Box.createVerticalStrut(8));
 
         JPanel bottomRow = new JPanel(new BorderLayout());
         bottomRow.setOpaque(false);
@@ -207,12 +231,13 @@ public class AccountPage extends JPanel {
                     : "Вход не выполнен");
             status.setForeground(Palette.WARN);
             hint.setText(state == Auth.TOKEN_NONE
-                    ? "Нажми «Войти» — откроется бот со ссылкой на твой ник, он пришлёт код."
+                    ? "Нажми «Войти» — бот получит ник из лаунчера и пришлёт код."
                     : "Нажми «Войти» и получи новый код: сохранённый токен больше не подходит.");
         }
         boolean signed = state == Auth.TOKEN_OK;
         login.setText(signed ? "Войти заново" : "Войти через Telegram");
         logout.setVisible(signed);
+        remember.setSelected(Store.remember());
         if (nickField.getText().trim().isEmpty()) {
             String name = Auth.nick();
             if (name.isEmpty() && host.prism() != null) name = host.prism().accountName();

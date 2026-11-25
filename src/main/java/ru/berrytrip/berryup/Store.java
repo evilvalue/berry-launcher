@@ -102,6 +102,15 @@ public final class Store {
         setBool("autoupdate", value);
     }
 
+    /** «Запомнить меня»: токен входа живёт в сборке до следующего запуска лаунчера. */
+    public static boolean remember() {
+        return getBool("auth.remember", true);
+    }
+
+    public static void setRemember(boolean value) {
+        setBool("auth.remember", value);
+    }
+
     public static boolean minimizeOnPlay() {
         return getBool("minimize", false);
     }
