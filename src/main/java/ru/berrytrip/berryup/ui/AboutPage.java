@@ -39,12 +39,13 @@ public class AboutPage extends JPanel {
         card.add(sub);
         card.add(Box.createVerticalStrut(14));
 
-        JLabel caption = Widgets.label("ЧТО НОВОГО В 3.2", Palette.semi(8f), Palette.DIM);
+        JLabel caption = Widgets.label("ЧТО НОВОГО В 3.2.1", Palette.semi(8f), Palette.DIM);
         caption.setAlignmentX(LEFT_ALIGNMENT);
         card.add(caption);
         card.add(Box.createVerticalStrut(6));
 
-        String notes = "Новый дизайн окна и иконка: ягодный градиент, объёмные карточки, аккуратная навигация.\n"
+        String notes = "Простая минималистичная иконка: ягодный градиент и один чистый знак — тот же вид на сайте и в Prism.\n"
+                + "Новый дизайн окна: ягодный градиент, объёмные карточки, аккуратная навигация.\n"
                 + "BerryUp по-прежнему один файл BerryUp.jar: ни установщика, ни архива, ни скриптов рядом.\n"
                 + "Сборка и Prism Launcher остаются на месте: BerryUp находит инстанс, обновляет его и запускает\n"
                 + "игру. Обновления BerryUp применяет сам — скачивает новый jar и подменяет файл при перезапуске.";
