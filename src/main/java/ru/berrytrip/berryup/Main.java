@@ -50,6 +50,19 @@ public final class Main {
             if (args.length > 1) Updater.applyUpdate(args[1]);
             return;
         }
+        if (mode.equals("--install")) {
+            Store.load();
+            java.io.File own = Updater.ownJar();
+            java.io.File target = own == null ? null : Install.install(own);
+            System.out.println(target == null ? "не удалось установить" : target.getAbsolutePath());
+            System.exit(target == null ? 1 : 0);
+            return;
+        }
+        if (mode.equals("--shortcut")) {
+            Store.load();
+            System.exit(Install.createShortcuts() ? 0 : 1);
+            return;
+        }
         if (mode.equals("--selftest")) {
             selftest();
             return;
@@ -86,6 +99,8 @@ public final class Main {
         if (mode.equals("--help") || mode.equals("-h")) {
             System.out.println("BerryUp " + Cfg.VERSION);
             System.out.println("  BerryUp.jar              запустить лаунчер");
+            System.out.println("  --install                установить в %LOCALAPPDATA%\\BerryUp и сделать ярлыки");
+            System.out.println("  --shortcut               пересоздать ярлыки (рабочий стол и меню «Пуск»)");
             System.out.println("  --selftest               что найдено на этом компьютере (JSON)");
             System.out.println("  --ping [host] [port]     пинг сервера по протоколу Minecraft");
             System.out.println("  --render <папка>         отрисовать вкладки в PNG");
@@ -116,6 +131,13 @@ public final class Main {
                     Cfg.APP_NAME, javax.swing.JOptionPane.INFORMATION_MESSAGE);
             return;
         }
+
+        // Первый запуск из «Загрузок»: переезжаем в %LOCALAPPDATA%\BerryUp,
+        // делаем ярлыки и дальше работаем уже оттуда.
+        Store.load();
+        Tweaks.load();
+        if (Install.ensure()) return;
+        if (Install.applyScale()) return;
 
         Updater.cleanup();
 
@@ -186,7 +208,8 @@ public final class Main {
         final MainFrame[] holder = new MainFrame[1];
         SwingUtilities.invokeAndWait(() -> {
             MainFrame frame = new MainFrame();
-            frame.setSize(1200, 800);
+            frame.setSize(Integer.getInteger("berryup.render.width", 1200),
+                    Integer.getInteger("berryup.render.height", 800));
             frame.setLocation(-4000, -4000);
             frame.setVisible(true);
             holder[0] = frame;

@@ -2,6 +2,7 @@ package ru.berrytrip.berryup.ui;
 
 import ru.berrytrip.berryup.Auth;
 import ru.berrytrip.berryup.Cfg;
+import ru.berrytrip.berryup.Install;
 import ru.berrytrip.berryup.Log;
 import ru.berrytrip.berryup.Ping;
 import ru.berrytrip.berryup.Prism;
@@ -71,10 +72,18 @@ public class MainFrame extends JFrame {
     public MainFrame() {
         super("BerryUp " + Cfg.VERSION);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(1060, 700));
         Store.load();
         Tweaks.load();
-        setSize(Math.max(1060, Store.getInt("width", 1200)), Math.max(700, Store.getInt("height", 800)));
+        // Окно не должно вылезать за экран: на ноутбуке с масштабом 125–150%
+        // логическое разрешение меньше прежних 1060×700, и низ обрезался.
+        java.awt.Rectangle usable = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getMaximumWindowBounds();
+        int minWidth = Math.min(940, Math.max(620, usable.width - 60));
+        int minHeight = Math.min(600, Math.max(460, usable.height - 60));
+        setMinimumSize(new Dimension(minWidth, minHeight));
+        int width = Math.max(minWidth, Math.min(Store.getInt("width", 1200), Math.max(minWidth, usable.width - 40)));
+        int height = Math.max(minHeight, Math.min(Store.getInt("height", 800), Math.max(minHeight, usable.height - 40)));
+        setSize(width, height);
         setLocationRelativeTo(null);
         try {
             java.awt.Image icon = javax.imageio.ImageIO.read(MainFrame.class.getResourceAsStream("/berry.png"));
@@ -95,8 +104,7 @@ public class MainFrame extends JFrame {
         JPanel side = new JPanel();
         side.setOpaque(false);
         side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
-        side.setPreferredSize(new Dimension(360, 100));
-        side.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 18));
+        side.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 14));
 
         Widgets.Card hero = new Widgets.Card();
         hero.setAlignmentX(LEFT_ALIGNMENT);
@@ -219,7 +227,30 @@ public class MainFrame extends JFrame {
         sideFoot.setAlignmentX(LEFT_ALIGNMENT);
         side.add(sideFoot);
 
-        root.add(side, BorderLayout.WEST);
+        // Колонка сужается вместе с окном, а на низком экране прокручивается.
+        // Ширину задаём обёртке, высоту берём настоящую — иначе BoxLayout
+        // сжимает карточки до нуля, и колонка выглядит пустой.
+        final int[] sideWidth = {340};
+        JPanel sideHolder = new JPanel(new BorderLayout()) {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension size = super.getPreferredSize();
+                return new Dimension(sideWidth[0], Math.max(10, size.height));
+            }
+        };
+        sideHolder.setOpaque(false);
+        sideHolder.add(Widgets.scroll(side), BorderLayout.CENTER);
+        root.add(sideHolder, BorderLayout.WEST);
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent event) {
+                int target = Math.max(286, Math.min(340, getWidth() / 3));
+                if (sideWidth[0] != target) {
+                    sideWidth[0] = target;
+                    sideHolder.revalidate();
+                }
+            }
+        });
 
         // ---------------------------------------------------------- правая часть
         nav = new Widgets.Segmented("Главное", "Аккаунт", "Настройки", "Диагностика", "О программе");
@@ -228,15 +259,24 @@ public class MainFrame extends JFrame {
 
         banner = new Banner();
 
-        JPanel header = new JPanel(new BorderLayout(8, 8));
+        // GridBag вместо BorderLayout: при узком окне кнопки навигации
+        // переносятся на вторую строку, а не уезжают за край.
+        JPanel header = new JPanel(new java.awt.GridBagLayout());
         header.setOpaque(false);
-        header.add(nav, BorderLayout.WEST);
+        java.awt.GridBagConstraints headNav = new java.awt.GridBagConstraints();
+        headNav.gridx = 0;
+        headNav.weightx = 1;
+        headNav.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        headNav.anchor = java.awt.GridBagConstraints.WEST;
+        header.add(nav, headNav);
         Widgets.BerryButton site = new Widgets.BerryButton("Сайт сборки", Widgets.BerryButton.Kind.GHOST);
         site.addActionListener(e -> ru.berrytrip.berryup.Sys.openUrl(Cfg.SITE));
-        JPanel siteWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        siteWrap.setOpaque(false);
-        siteWrap.add(site);
-        header.add(siteWrap, BorderLayout.EAST);
+        java.awt.GridBagConstraints headSite = new java.awt.GridBagConstraints();
+        headSite.gridx = 1;
+        headSite.weightx = 0;
+        headSite.anchor = java.awt.GridBagConstraints.EAST;
+        headSite.insets = new java.awt.Insets(0, 8, 0, 0);
+        header.add(site, headSite);
 
         JPanel top = new JPanel(new BorderLayout(0, 10));
         top.setOpaque(false);
@@ -251,11 +291,11 @@ public class MainFrame extends JFrame {
 
         pages.setOpaque(false);
         pages.setBorder(BorderFactory.createEmptyBorder(16, 2, 0, 2));
-        pages.add(home, PAGE_NAMES[0]);
-        pages.add(account, PAGE_NAMES[1]);
-        pages.add(settings, PAGE_NAMES[2]);
-        pages.add(diag, PAGE_NAMES[3]);
-        pages.add(about, PAGE_NAMES[4]);
+        pages.add(Widgets.scroll(home), PAGE_NAMES[0]);
+        pages.add(Widgets.scroll(account), PAGE_NAMES[1]);
+        pages.add(settings, PAGE_NAMES[2]); // у «Настроек» своя прокрутка
+        pages.add(Widgets.scroll(diag), PAGE_NAMES[3]);
+        pages.add(Widgets.scroll(about), PAGE_NAMES[4]);
 
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
@@ -375,6 +415,42 @@ public class MainFrame extends JFrame {
     public void setState(String text, Color color) {
         stateLabel.setText(text);
         stateLabel.setForeground(color);
+    }
+
+    /** Ярлыки на рабочем столе и в «Пуске» — кнопка в настройках. */
+    public void makeShortcut() {
+        setState("Создаю ярлыки…", Palette.WARN);
+        new Thread(() -> {
+            boolean ok = Install.createShortcuts();
+            SwingUtilities.invokeLater(() -> setState(
+                    ok ? "Ярлык BerryUp на рабочем столе и в «Пуске»" : "Ярлык не создан — смотри журнал",
+                    ok ? Palette.OK : Palette.ERR));
+        }, "berry-shortcut").start();
+    }
+
+    /** Масштаб интерфейса: сохраняем и перезапускаемся с нужным sun.java2d.uiScale. */
+    public void applyUiScale(String value) {
+        String label = value == null || value.isEmpty() || "auto".equals(value)
+                ? "как в системе" : value.replace(',', '.');
+        int answer = JOptionPane.showConfirmDialog(this,
+                "Масштаб интерфейса: " + label + ".\nЧтобы применить, BerryUp перезапустится. Продолжить?",
+                Cfg.APP_NAME, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if (answer != JOptionPane.YES_OPTION) {
+            settings.refreshScale();
+            return;
+        }
+        Store.set("ui.scale", value == null ? "" : value);
+        Store.save();
+        try {
+            Install.restart(value);
+            dispose();
+            System.exit(0);
+        } catch (Exception error) {
+            Log.error("Масштаб не применился: " + error.getMessage());
+            JOptionPane.showMessageDialog(this,
+                    "Не удалось перезапустить BerryUp:\n" + error.getMessage(),
+                    Cfg.APP_NAME, JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     public void play(boolean connect) {

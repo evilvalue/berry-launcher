@@ -3,6 +3,8 @@ package ru.berrytrip.berryup;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -23,6 +25,24 @@ public final class Skins {
 
     public static File directory(Prism prism) {
         return new File(prism.minecraftDir(), "quickskin/uploads/skins");
+    }
+
+    /** Последний скин из папки QuickSkin — чтобы показать его в 3D при старте. */
+    public static BufferedImage current(Prism prism) {
+        if (prism == null || !prism.hasInstance()) return null;
+        File[] files = directory(prism).listFiles();
+        if (files == null) return null;
+        File newest = null;
+        for (File file : files) {
+            if (!file.isFile() || !file.getName().toLowerCase(Locale.ROOT).endsWith(".png")) continue;
+            if (newest == null || file.lastModified() > newest.lastModified()) newest = file;
+        }
+        if (newest == null) return null;
+        try {
+            return ImageIO.read(newest);
+        } catch (Exception error) {
+            return null;
+        }
     }
 
     /** Возвращает имя файла, который лёг в папку скинов. */

@@ -141,6 +141,56 @@ public final class Widgets {
         }
     }
 
+    /**
+     * Тело прокручиваемой страницы: растягивается по ширине окна и берёт
+     * высоту содержимого, чтобы при маленьком окне появилась прокрутка,
+     * а не обрезанные карточки.
+     */
+    public static class ScrollBody extends JPanel implements Scrollable {
+        public ScrollBody(java.awt.Component view) {
+            super(new java.awt.BorderLayout());
+            setOpaque(false);
+            add(view, java.awt.BorderLayout.NORTH);
+        }
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visible, int orientation, int direction) {
+            return 24;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visible, int orientation, int direction) {
+            return Math.max(48, visible.height - 48);
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
+    }
+
+    /** Сразу готовый прозрачный scroll pane для страницы или колонки. */
+    public static javax.swing.JScrollPane scroll(java.awt.Component view) {
+        javax.swing.JScrollPane pane = new javax.swing.JScrollPane(new ScrollBody(view));
+        pane.setBorder(null);
+        pane.setOpaque(false);
+        pane.getViewport().setOpaque(false);
+        pane.setHorizontalScrollBarPolicy(javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        pane.setVerticalScrollBarPolicy(javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        pane.getVerticalScrollBar().setUnitIncrement(24);
+        return pane;
+    }
+
     /** Прокручиваемая страница, которая подстраивается под ширину окна. */
     public static class Page extends JPanel implements Scrollable {
         public Page(LayoutManager layout) {

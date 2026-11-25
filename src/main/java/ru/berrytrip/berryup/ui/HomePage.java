@@ -22,7 +22,7 @@ public class HomePage extends JPanel {
 
     private final MainFrame host;
     private final JPanel warning;
-    private final JLabel warningText;
+    private final javax.swing.JTextArea warningText;
     private final Widgets.BerryButton install;
     private final Widgets.BerryButton pickLauncher;
     private final JLabel infoBuild;
@@ -57,7 +57,7 @@ public class HomePage extends JPanel {
         hero.setOpaque(false);
         hero.setAlignmentX(LEFT_ALIGNMENT);
         hero.setBorder(BorderFactory.createEmptyBorder(20, 22, 20, 22));
-        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 148));
+        hero.setMaximumSize(new Dimension(Integer.MAX_VALUE, 170));
         hero.add(new Widgets.Logo(66), BorderLayout.WEST);
 
         JPanel heroText = new JPanel();
@@ -71,10 +71,11 @@ public class HomePage extends JPanel {
         sub.setAlignmentX(LEFT_ALIGNMENT);
         heroText.add(sub);
         heroText.add(Box.createVerticalStrut(8));
-        JLabel intro = Widgets.label(
+        javax.swing.JTextArea intro = Widgets.paragraph(
                 "Выживание, приключения и друзья. Запуск и сервер слева, настройки клиента — во вкладке «Настройки».",
                 Palette.reg(9.2f), Palette.MUTED);
         intro.setAlignmentX(LEFT_ALIGNMENT);
+        intro.setRows(2);
         heroText.add(intro);
         heroText.add(Box.createVerticalStrut(8));
 
@@ -101,9 +102,10 @@ public class HomePage extends JPanel {
         };
         warning.setOpaque(false);
         warning.setAlignmentX(LEFT_ALIGNMENT);
-        warning.setMaximumSize(new Dimension(Integer.MAX_VALUE, 62));
+        warning.setMaximumSize(new Dimension(Integer.MAX_VALUE, 74));
         warning.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
-        warningText = Widgets.label("Сборка ещё не установлена в Prism.", Palette.reg(9f), Palette.WARN);
+        warningText = Widgets.paragraph("Сборка ещё не установлена в Prism.", Palette.reg(9f), Palette.WARN);
+        warningText.setRows(2);
         warning.add(warningText, BorderLayout.CENTER);
         install = new Widgets.BerryButton("Установить сборку", Widgets.BerryButton.Kind.PRIMARY);
         install.addActionListener(e -> {
@@ -226,6 +228,7 @@ public class HomePage extends JPanel {
             warningText.setText(hasLauncher
                     ? "Сборка BerryTrip не установлена в " + prism.kind + "."
                     : "Prism Launcher не найден — BerryUp работает поверх него.");
+
             install.setEnabled(true);
             install.setText(hasLauncher ? "Установить сборку" : "Скачать Prism");
             pickLauncher.setVisible(!hasLauncher);

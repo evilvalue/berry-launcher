@@ -36,6 +36,9 @@ public class SettingsPage extends JPanel {
     private final javax.swing.JLabel launcherName;
     private final javax.swing.JLabel launcherPath;
     private final int totalRam;
+    private final String[] scaleValues = {"", "1.0", "1.25", "1.5", "1.75", "2.0"};
+    private javax.swing.JComboBox<String> scaleBox;
+    private boolean scaleSyncing;
 
     public SettingsPage(MainFrame host) {
         this.host = host;
@@ -170,7 +173,7 @@ public class SettingsPage extends JPanel {
         });
         applyRow.add(apply, BorderLayout.EAST);
         memory.add(applyRow);
-        memory.setMaximumSize(new Dimension(Integer.MAX_VALUE, 132));
+        memory.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
         right.add(memory);
         right.add(Box.createVerticalStrut(12));
 
@@ -227,7 +230,46 @@ public class SettingsPage extends JPanel {
             Store.save();
         });
         behaviour.add(minimize);
-        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 210));
+
+        JPanel shortcutRow = new JPanel(new BorderLayout(8, 0));
+        shortcutRow.setOpaque(false);
+        shortcutRow.setAlignmentX(LEFT_ALIGNMENT);
+        shortcutRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        shortcutRow.add(Widgets.label("рабочий стол и меню «Пуск»", Palette.reg(8f), Palette.DIM),
+                BorderLayout.CENTER);
+        Widgets.BerryButton shortcut = new Widgets.BerryButton("Создать ярлык", Widgets.BerryButton.Kind.SECONDARY);
+        shortcut.setToolTipText("Пересоздать ярлык BerryUp — запуск сразу правильной Java из Prism, без чёрного окна.");
+        shortcut.addActionListener(e -> host.makeShortcut());
+        shortcutRow.add(shortcut, BorderLayout.EAST);
+        behaviour.add(Box.createVerticalStrut(6));
+        behaviour.add(shortcutRow);
+
+        JPanel scaleRow = new JPanel(new BorderLayout(8, 0));
+        scaleRow.setOpaque(false);
+        scaleRow.setAlignmentX(LEFT_ALIGNMENT);
+        scaleRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        scaleRow.add(Widgets.label("масштаб интерфейса", Palette.reg(8.5f), Palette.FG), BorderLayout.WEST);
+        scaleBox = new javax.swing.JComboBox<String>(new String[]{
+                "как в системе", "100%", "125%", "150%", "175%", "200%"});
+        scaleBox.setFont(Palette.reg(9f));
+        scaleBox.setBackground(Palette.SURFACE_ALT);
+        scaleBox.setForeground(Palette.FG);
+        scaleBox.setFocusable(false);
+        String savedScale = Store.get("ui.scale", "");
+        for (int i = 0; i < scaleValues.length; i++) {
+            if (scaleValues[i].equals(savedScale)) scaleBox.setSelectedIndex(i);
+        }
+        scaleBox.setToolTipText("Фиксированный масштаб помогает, если на ноутбуке шрифт мелкий или размытый. По умолчанию — как в Windows.");
+        scaleBox.addActionListener(e -> {
+            if (scaleSyncing) return;
+            String value = scaleValues[Math.max(0, scaleBox.getSelectedIndex())];
+            if (value.equals(Store.get("ui.scale", ""))) return;
+            host.applyUiScale(value);
+        });
+        scaleRow.add(scaleBox, BorderLayout.EAST);
+        behaviour.add(Box.createVerticalStrut(6));
+        behaviour.add(scaleRow);
+        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 392));
         right.add(behaviour);
         right.add(Box.createVerticalGlue());
 
@@ -303,6 +345,17 @@ public class SettingsPage extends JPanel {
         updateMemoryLabel();
         logArea.setText("");
         appendLog("Журнал BerryUp. Файл: " + Log.path());
+    }
+
+    /** Вернуть селектор к сохранённому масштабу, если перезапуск отменили. */
+    public void refreshScale() {
+        if (scaleBox == null) return;
+        String saved = Store.get("ui.scale", "");
+        scaleSyncing = true;
+        for (int i = 0; i < scaleValues.length; i++) {
+            if (scaleValues[i].equals(saved)) scaleBox.setSelectedIndex(i);
+        }
+        scaleSyncing = false;
     }
 
     /** Показывает, какой лаунчер найден, и обновляется после выбора пути. */

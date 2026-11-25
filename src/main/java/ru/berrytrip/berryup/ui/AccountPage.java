@@ -20,9 +20,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
@@ -40,10 +37,9 @@ public class AccountPage extends JPanel {
     private final Widgets.BerryButton check;
     private final Widgets.BerryButton applySkin;
     private final JCheckBox remember;
-    private final JPanel preview;
+    private final SkinView preview;
 
     private File pickedSkin;
-    private BufferedImage previewImage;
     private int lastState = -1;
 
     public AccountPage(MainFrame host) {
@@ -149,45 +145,49 @@ public class AccountPage extends JPanel {
         skinCard.setAlignmentX(LEFT_ALIGNMENT);
         skinCard.setLayout(new BorderLayout(16, 0));
         skinCard.pad(18, 20, 18, 20);
-        skinCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 250));
-        skinCard.add(left(Widgets.caption("СКИН · QUICKSKIN", Palette.SURFACE)), BorderLayout.NORTH);
+        skinCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 336));
+        skinCard.add(left(Widgets.caption("СКИН · 3D-ПРОСМОТР", Palette.SURFACE)), BorderLayout.NORTH);
 
-        preview = new JPanel() {
+        preview = new SkinView();
+        preview.setPreferredSize(new Dimension(190, 252));
+        preview.setMinimumSize(new Dimension(130, 190));
+        BufferedImage existing = Skins.current(host.prism());
+        preview.setSkin(existing);
+        skinStatus.setText(existing != null
+                ? "текущий скин · потяни модель мышью"
+                : "скин не выбран · выбери PNG или перетащи файл");
+        preview.setTransferHandler(new javax.swing.TransferHandler() {
             @Override
-            protected void paintComponent(Graphics graphics) {
-                super.paintComponent(graphics);
-                Graphics2D g = Palette.quality(graphics);
-                Palette.fillRound(g, 0, 0, getWidth(), getHeight(), 12, Palette.SURFACE_ALT);
-                if (previewImage != null) {
-                    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                            RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-                    double scale = Math.min((getWidth() - 8) / (double) previewImage.getWidth(),
-                            (getHeight() - 8) / (double) previewImage.getHeight());
-                    int width = Math.max(1, (int) (previewImage.getWidth() * scale));
-                    int height = Math.max(1, (int) (previewImage.getHeight() * scale));
-                    g.drawImage(previewImage, (getWidth() - width) / 2, (getHeight() - height) / 2,
-                            width, height, null);
-                } else {
-                    g.setColor(Palette.DIM);
-                    g.setFont(Palette.reg(8f));
-                    g.drawString("нет скина", 18, getHeight() / 2 + 4);
-                }
-                g.dispose();
+            public boolean canImport(TransferSupport support) {
+                return support.isDataFlavorSupported(java.awt.datatransfer.DataFlavor.javaFileListFlavor);
             }
-        };
-        preview.setOpaque(false);
-        preview.setPreferredSize(new Dimension(104, 190));
-        preview.setMinimumSize(new Dimension(104, 190));
+
+            @Override
+            public boolean importData(TransferSupport support) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    java.util.List<File> files = (java.util.List<File>) support.getTransferable()
+                            .getTransferData(java.awt.datatransfer.DataFlavor.javaFileListFlavor);
+                    if (files.isEmpty()) return false;
+                    useSkin(files.get(0));
+                    return true;
+                } catch (Exception error) {
+                    skinStatus.setText("Не удалось принять файл: " + error.getMessage());
+                    return false;
+                }
+            }
+        });
         skinCard.add(preview, BorderLayout.WEST);
 
         JPanel skinText = new JPanel();
         skinText.setOpaque(false);
         skinText.setLayout(new BoxLayout(skinText, BoxLayout.Y_AXIS));
         JTextArea skinHint = Widgets.paragraph(
-                "Выбери PNG 64×64. Файл попадёт в папку QuickSkin, и мод покажет его в меню скина.",
+                "Выбери PNG 64×64 или HD 128×128 — модель сразу покажет, как скин сядет. "
+                        + "Можно просто перетащить файл на модель. Скин попадёт в папку QuickSkin и применится модом.",
                 Palette.reg(9f), Palette.MUTED);
         skinHint.setAlignmentX(LEFT_ALIGNMENT);
-        skinHint.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        skinHint.setMaximumSize(new Dimension(Integer.MAX_VALUE, 66));
         skinText.add(skinHint);
         skinText.add(Box.createVerticalStrut(10));
 
@@ -291,10 +291,14 @@ public class AccountPage extends JPanel {
 
     private void pickSkin() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("PNG со скином 64×64");
+        chooser.setDialogTitle("PNG со скином 64×64 (или HD 128×128)");
         chooser.setFileFilter(new FileNameExtensionFilter("Скин (*.png)", "png"));
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
-        File file = chooser.getSelectedFile();
+        useSkin(chooser.getSelectedFile());
+    }
+
+    /** Один путь для кнопки и для drag&drop: проверить PNG и показать в 3D. */
+    private void useSkin(File file) {
         try {
             BufferedImage image = ImageIO.read(file);
             if (image == null) {
@@ -302,10 +306,10 @@ public class AccountPage extends JPanel {
                 return;
             }
             pickedSkin = file;
-            previewImage = image;
+            preview.setSkin(image);
             applySkin.setEnabled(true);
-            skinStatus.setText(file.getName() + " · " + image.getWidth() + "×" + image.getHeight());
-            preview.repaint();
+            skinStatus.setText(file.getName() + " · " + image.getWidth() + "×" + image.getHeight()
+                    + " · покрути модель мышью");
         } catch (Exception error) {
             skinStatus.setText("Не удалось прочитать файл: " + error.getMessage());
         }

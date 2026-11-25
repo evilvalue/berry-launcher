@@ -16,9 +16,12 @@ BerryUp не запускает игру сам и не заменяет Prism: 
 - Релизы: <https://github.com/evilvalue/berry-launcher/releases>
 - Метаданные версии и хеши: <https://evilvalue.github.io/berry/launcher/latest-java.json>
 
-Положи jar в обычную папку (например `C:\BerryUp`) и запусти. Отдельно ставить Java
-не нужно: BerryUp запускается на Java из Prism Launcher. Никаких скриптов и архивов
-рядом с лаунчером нет.
+Запусти jar из любой папки — при первом запуске BerryUp сам поставится в
+`%LOCALAPPDATA%\BerryUp`, сделает иконку и ярлыки на рабочем столе и в меню «Пуск»,
+а скачанный файл уберёт. Дальше запускай с ярлыка: ярлык берёт Java из Prism
+(или текущую Java 9+), поэтому на масштабе Windows 125–150% шрифт остаётся резким.
+Отдельно ставить Java не нужно — BerryUp рассчитан на Java 8+ и запускается на
+Java из Prism Launcher. Никаких скриптов и архивов рядом с лаунчером нет.
 
 На чистой Windows `.jar` может быть ничем не связан: тогда правый клик по файлу →
 «Открыть с помощью» → `javaw.exe` из `%APPDATA%\PrismLauncher\java\java-runtime-*\bin`,
@@ -48,6 +51,8 @@ powershell -ExecutionPolicy Bypass -File build\publish-java.ps1 -Notes "что �
 java -jar BerryUp.jar --selftest                  # что найдено: JSON без окна
 java -jar BerryUp.jar --ping [host] [port]        # пинг по протоколу Minecraft
 java -jar BerryUp.jar --render build/render       # вкладки в PNG
+java -jar BerryUp.jar --install                   # поставить в %LOCALAPPDATA% и сделать ярлыки
+java -jar BerryUp.jar --shortcut                  # пересоздать ярлыки
 ```
 
 ## Как это работает
@@ -63,10 +68,18 @@ java -jar BerryUp.jar --render build/render       # вкладки в PNG
   перед синхронизацией возвращаются, после — снова убираются.
 - **Память, ресурспаки, шейдеры** — правятся в `instance.cfg`, `options.txt`,
   `config/iris.properties` инстанса.
+- **Установка** — при первом запуске jar переезжает в `%LOCALAPPDATA%\BerryUp`,
+  рядом появляются `berry.ico` и ярлыки на рабочем столе и в «Пуске».
 - **Обновление BerryUp** — новый jar скачивается в `%LOCALAPPDATA%\BerryUp\update`,
   сверяется по SHA-256, а затем BerryUp запускает себя вторым процессом
   (`--apply-update`): тот ждёт выхода старого окна, подменяет файл на месте и
   открывает новую версию (работающий jar на Windows заменить нельзя).
+- **Скин** — PNG 64×64 или HD 128×128 показывается объёмной моделью прямо в
+  лаунчере: крутится мышью, принимает файл перетаскиванием, затем кладётся в
+  папку QuickSkin и прописывается в `quickskin-client.json`.
+- **Интерфейс** — окно подстраивается под экран и размер (колонки и вкладки
+  прокручиваются), масштаб 100–200% задаётся в настройках, текст рисуется с
+  LCD-сглаживанием.
 
 Настройки лежат в `%APPDATA%\BerryUp` и совместимы с прежней exe-версией;
 `BERRYUP_CONFIG_DIR` подменяет папку настроек для тестов.

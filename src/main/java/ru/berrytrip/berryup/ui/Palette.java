@@ -59,13 +59,16 @@ public final class Palette {
     }
 
     private static Font font(String family, int style, float size) {
-        String key = family + "|" + style + "|" + size;
+        // Полупиксельные размеры: при дробных кеглях Windows растеризует
+        // текст с размытием, а на HiDPI это особенно заметно.
+        float snapped = Math.round(size * 2f) / 2f;
+        String key = family + "|" + style + "|" + snapped;
         synchronized (FONTS) {
             Font cached = FONTS.get(key);
             if (cached != null) return cached;
-            Font font = new Font(family, style, 12).deriveFont(size);
+            Font font = new Font(family, style, 12).deriveFont(snapped);
             if (!font.getFamily().equalsIgnoreCase(family)) {
-                font = new Font(Font.SANS_SERIF, style, 12).deriveFont(size);
+                font = new Font(Font.SANS_SERIF, style, 12).deriveFont(snapped);
             }
             FONTS.put(key, font);
             return font;
@@ -115,9 +118,16 @@ public final class Palette {
     public static Graphics2D quality(java.awt.Graphics g) {
         Graphics2D copy = (Graphics2D) g.create();
         copy.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        copy.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        // LCD-сглаживание даёт резкие буквы на тёмном фоне; на экранах без
+        // субпикселей Java сама откатится к обычному сглаживанию.
+        copy.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+        copy.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
+                RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
         copy.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         copy.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        copy.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BILINEAR);
         return copy;
     }
 
