@@ -17,7 +17,7 @@ import java.util.Locale;
  */
 public final class Mods {
 
-    public static final String NAME = "berryauth-1.1.1.jar";
+    public static final String NAME = "berryauth-1.1.2.jar";
 
     private Mods() {
     }
