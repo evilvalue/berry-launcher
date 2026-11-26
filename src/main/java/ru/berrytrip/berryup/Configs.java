@@ -98,6 +98,9 @@ public final class Configs {
 
         stage(progress, "Применяю настройки лаунчера…", 0.9);
         Tweaks.applyAll(prism);
+        // DH-конфиг не лежит в packwiz: возвращаем рабочий, иначе первый
+        // запуск после сброса снова создаст слишком длинные пути.
+        DistantHorizons.apply(prism);
         prune(prism);
         stage(progress, "Конфиги сброшены", 1);
         Log.ok("Конфиги сброшены к исходным. Копия: " + backup.getAbsolutePath());

@@ -54,6 +54,7 @@ public final class Sync {
         prism.rescan();
         if (!prism.hasInstance()) throw new Exception("в архиве нет инстанса BerryTrip");
         Tweaks.applyAll(prism);
+        DistantHorizons.apply(prism);
         if (progress != null) progress.stage("Сборка установлена", 1);
         Log.ok("Сборка установлена: " + target.getAbsolutePath());
     }

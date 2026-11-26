@@ -1,6 +1,7 @@
 package ru.berrytrip.berryup;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,10 +33,30 @@ public final class DistantHorizons {
     public static void apply(Prism prism) {
         if (prism == null || !prism.hasInstance()) return;
         File config = new File(new File(prism.minecraftDir(), "config"), "DistantHorizons.toml");
-        boolean changed = config.isFile() && fixFolderMode(config);
+        boolean changed = ensureConfig(config);
+        changed |= config.isFile() && fixFolderMode(config);
         changed |= migrate(prism);
         if (changed) {
             Log.ok("Distant Horizons: папки LOD называются по IP — длинный путь больше не ломает базу.");
+        }
+    }
+
+    /**
+     * В исходной сборке DH ещё не запускался, поэтому конфига нет. Кладём
+     * известный рабочий конфиг заранее: иначе первый запуск создаст его
+     * с именем папки по серверу и снова упрётся в длинный путь.
+     */
+    private static boolean ensureConfig(File config) {
+        if (config.isFile()) return false;
+        File parent = config.getParentFile();
+        if (parent != null && !parent.isDirectory() && !parent.mkdirs()) return false;
+        try (InputStream stream = DistantHorizons.class.getResourceAsStream("/DistantHorizons.toml")) {
+            if (stream == null) return false;
+            Files.copy(stream, config.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            return true;
+        } catch (Exception error) {
+            Log.error("Distant Horizons: не удалось создать конфиг — " + error.getMessage());
+            return false;
         }
     }
 
