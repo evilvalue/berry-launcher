@@ -126,8 +126,18 @@ public class SettingsPage extends JPanel {
         }
 
         mods.add(Box.createVerticalGlue());
+        mods.add(Widgets.vgap(6));
+        Widgets.BerryButton reset = new Widgets.BerryButton("Сбросить конфиги",
+                Widgets.BerryButton.Kind.DANGER);
+        reset.setAlignmentX(LEFT_ALIGNMENT);
+        reset.setPreferredSize(new Dimension(240, 40));
+        reset.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        reset.setToolTipText("Вернуть config/, options.txt, клавиши и список серверов к состоянию новой сборки. "
+                + "Сохранения и вход останутся, старые конфиги уйдут в berry-config-backup.");
+        reset.addActionListener(e -> host.resetConfigs());
+        mods.add(reset);
 
-        mods.setMinimumSize(new Dimension(340, 260));
+        mods.setMinimumSize(new Dimension(340, 286));
         mods.setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
         leftColumn.add(mods);
         leftColumn.add(Widgets.vgap(10));
@@ -222,12 +232,6 @@ public class SettingsPage extends JPanel {
         behaviour.pad(10, 16, 10, 16);
         behaviour.add(leftAligned(Widgets.caption("ЛАУНЧЕР", Palette.SURFACE)));
         behaviour.add(Widgets.vgap(6));
-
-        Widgets.Toggle darkTheme = new Widgets.Toggle("Тёмная тема", null, Palette.isDark());
-        darkTheme.setAlignmentX(LEFT_ALIGNMENT);
-        darkTheme.setToolTipText("Переключить светлое и тёмное оформление. Окно быстро пересоберётся.");
-        darkTheme.onChange(host::applyTheme);
-        behaviour.add(darkTheme);
 
         javax.swing.JPanel pathColumn = new javax.swing.JPanel();
         pathColumn.setOpaque(false);
@@ -375,7 +379,7 @@ public class SettingsPage extends JPanel {
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
         logArea.setFont(Palette.mono(8.5f));
-        logArea.setForeground(Palette.isDark() ? Palette.MUTED : Palette.FG);
+        logArea.setForeground(Palette.MUTED);
         logArea.setBackground(Palette.SURFACE);
         logArea.setCaretColor(Palette.ACCENT);
         logArea.setBorder(BorderFactory.createEmptyBorder(8, 2, 2, 2));

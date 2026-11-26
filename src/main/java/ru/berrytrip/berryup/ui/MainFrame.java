@@ -2,6 +2,7 @@ package ru.berrytrip.berryup.ui;
 
 import ru.berrytrip.berryup.Auth;
 import ru.berrytrip.berryup.Cfg;
+import ru.berrytrip.berryup.Configs;
 import ru.berrytrip.berryup.DistantHorizons;
 import ru.berrytrip.berryup.Install;
 import ru.berrytrip.berryup.Log;
@@ -121,7 +122,7 @@ public class MainFrame extends JFrame {
         root.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
         JPanel shell = new JPanel(new BorderLayout());
         shell.setBackground(Palette.SURFACE);
-        shell.setBorder(BorderFactory.createLineBorder(Palette.LINE, 1));
+        shell.setBorder(BorderFactory.createLineBorder(Palette.LINE, 2));
         shell.add(titleBar(), BorderLayout.NORTH);
         shell.add(root, BorderLayout.CENTER);
         setContentPane(shell);
@@ -188,7 +189,7 @@ public class MainFrame extends JFrame {
         serverBox.setFocusable(false);
         serverBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
         serverBox.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Palette.LINE, 1, true),
+                BorderFactory.createLineBorder(Palette.LINE, 2, false),
                 BorderFactory.createEmptyBorder(1, 4, 1, 4)));
         serverBox.setAlignmentX(LEFT_ALIGNMENT);
         serverBox.setRenderer(new DefaultListCellRenderer() {
@@ -216,7 +217,6 @@ public class MainFrame extends JFrame {
         statusRow.setAlignmentX(LEFT_ALIGNMENT);
         statusRow.add(serverDot);
         serverStatus = Widgets.label("проверяю…", Palette.reg(8.5f), Palette.MUTED);
-        serverStatus.setToolTipText("Состояние общего сервера. Москва и Anycast — прокси к тому же серверу.");
         statusRow.add(serverStatus);
         serverCard.add(statusRow);
         serverCard.add(Box.createVerticalStrut(6));
@@ -453,17 +453,41 @@ public class MainFrame extends JFrame {
         }, "berry-shortcut").start();
     }
 
-    /** Переключение светлой/тёмной темы: пересобираем окно с новыми цветами. */
-    public void applyTheme(boolean dark) {
-        Store.setBool("theme.dark", dark);
-        Store.save();
-        Palette.applyTheme(dark);
-        ru.berrytrip.berryup.Main.setupLook(dark);
-        dispose();
-        SwingUtilities.invokeLater(() -> {
-            MainFrame frame = new MainFrame();
-            frame.setVisible(true);
-        });
+    /** Сбрасывает конфиги к исходным, сохранив текущие в berry-config-backup. */
+    public void resetConfigs() {
+        if (prism == null || !prism.hasInstance()) {
+            setState("Сборка не установлена", Palette.WARN);
+            return;
+        }
+        int answer = JOptionPane.showConfirmDialog(this,
+                "Конфиги модов, настройки графики, клавиши и список серверов\n"
+                        + "вернутся к исходным, как в только что скачанной сборке.\n\n"
+                        + "Сохранения, моды и вход останутся. Игру лучше закрыть.\n"
+                        + "Текущие конфиги сохраню в папку berry-config-backup. Продолжить?",
+                Cfg.APP_NAME, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (answer != JOptionPane.YES_OPTION) return;
+        setState("Сбрасываю конфиги…", Palette.WARN);
+        new Thread(() -> {
+            try {
+                File backup = Configs.reset(prism, (text, bar) ->
+                        SwingUtilities.invokeLater(() -> setState(text, Palette.WARN)));
+                SwingUtilities.invokeLater(() -> {
+                    refreshAll();
+                    setState("Конфиги сброшены", Palette.OK);
+                    JOptionPane.showMessageDialog(this,
+                            "Конфиги вернулись к исходным.\n\nКопия старых: " + backup.getAbsolutePath(),
+                            Cfg.APP_NAME, JOptionPane.INFORMATION_MESSAGE);
+                });
+            } catch (Exception error) {
+                Log.error("Сброс конфигов не удался: " + error.getMessage());
+                SwingUtilities.invokeLater(() -> {
+                    setState("Конфиги не сбросились", Palette.ERR);
+                    JOptionPane.showMessageDialog(this,
+                            "Не удалось сбросить конфиги:\n" + error.getMessage(),
+                            Cfg.APP_NAME, JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        }, "berry-config-reset").start();
     }
 
     /** Масштаб интерфейса: сохраняем и перезапускаемся с нужным sun.java2d.uiScale. */
@@ -762,7 +786,7 @@ public class MainFrame extends JFrame {
                     serverDot.setColor(Palette.ERR);
                     serverStatus.setText("офлайн");
                     serverStatus.setForeground(Palette.MUTED);
-                    serverMotd.setText("Сервер недоступен. Москва и Anycast — прокси к нему, поэтому тоже офлайн.");
+                    serverMotd.setText("Сервер недоступен.");
                 }
             });
         }, "berry-ping").start();
@@ -783,10 +807,10 @@ public class MainFrame extends JFrame {
     private JPanel titleBar() {
         JPanel bar = new JPanel(new BorderLayout());
         bar.setBackground(Palette.SURFACE);
-        bar.setPreferredSize(new Dimension(10, 40));
+        bar.setPreferredSize(new Dimension(10, 42));
         bar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, Palette.LINE),
-                BorderFactory.createEmptyBorder(0, 12, 0, 6)));
+                BorderFactory.createMatteBorder(0, 0, 2, 0, Palette.LINE),
+                BorderFactory.createEmptyBorder(0, 12, 0, 8)));
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 9, 9));
         left.setOpaque(false);
@@ -874,7 +898,9 @@ public class MainFrame extends JFrame {
                 java.awt.image.BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
         g.setColor(Palette.ACCENT);
-        g.fillRoundRect(0, 0, 16, 16, 5, 5);
+        g.fillRect(0, 0, 16, 16);
+        g.setColor(Palette.ACCENT_DEEP);
+        g.drawRect(0, 0, 15, 15);
         g.dispose();
         return image;
     }
@@ -966,18 +992,19 @@ public class MainFrame extends JFrame {
             int w = getWidth();
             int h = getHeight();
             if (hover) {
-                Palette.fillRound(g, 2, 2, w - 4, h - 4, 3,
-                        close ? Palette.alpha(Palette.ERR, 34) : Palette.SURFACE_ALT);
+                g.setColor(close ? Palette.ERR : Palette.SURFACE_ALT);
+                g.fillRect(2, 2, w - 4, h - 4);
             }
-            g.setColor(hover ? (close ? Palette.ERR : Palette.FG) : Palette.MUTED);
-            g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.setColor(hover ? (close ? Palette.ON_ACCENT : Palette.FG) : Palette.MUTED);
             int cx = w / 2;
             int cy = h / 2;
             if (close) {
-                g.drawLine(cx - 5, cy - 5, cx + 5, cy + 5);
-                g.drawLine(cx + 5, cy - 5, cx - 5, cy + 5);
+                for (int i = -5; i <= 5; i++) {
+                    g.fillRect(cx + i, cy + i, 2, 2);
+                    g.fillRect(cx + i, cy - i, 2, 2);
+                }
             } else {
-                g.drawLine(cx - 6, cy + 1, cx + 6, cy + 1);
+                g.fillRect(cx - 6, cy, 12, 2);
             }
             g.dispose();
         }
@@ -1045,9 +1072,9 @@ public class MainFrame extends JFrame {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, 4, Palette.mix(Palette.SURFACE, Palette.ACCENT, 0.07f));
-            g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 4, Palette.alpha(Palette.ACCENT, 80));
+            Palette.fillRound(g, 0, 0, w, h, 0, Palette.mix(Palette.SURFACE, Palette.ACCENT, 0.07f));
+            g.setStroke(new BasicStroke(2f));
+            Palette.strokeRound(g, 1, 1, w - 3, h - 3, 0, Palette.alpha(Palette.ACCENT, 160));
             g.dispose();
             super.paintComponent(graphics);
         }

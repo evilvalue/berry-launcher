@@ -12,7 +12,7 @@ public final class Cfg {
 
     public static final String APP_NAME = "BerryUp";
     public static final String BUILD = "BerryTrip";
-    public static final String VERSION = "3.13.0";
+    public static final String VERSION = "3.14.0";
 
     public static final String SITE = "https://evilvalue.github.io/berry/";
     public static final String TELEGRAM = "https://t.me/killberries";
@@ -25,6 +25,14 @@ public final class Cfg {
     public static final String AUTH_API = "http://135.181.126.167:25712";
     public static final String PACK_URL = "https://evilvalue.github.io/berry/pack.toml";
     public static final String INSTANCE_URL = "https://evilvalue.github.io/berry/launcher/instance.zip";
+    /** Исходные конфиги сборки: кнопка сброса возвращает именно их. */
+    public static final String CONFIGS_URL = "https://evilvalue.github.io/berry/launcher/configs.zip";
+
+    /** Адрес исходных конфигов; BERRYUP_CONFIGS_URL нужен для локальной проверки. */
+    public static String configsUrl() {
+        String custom = System.getenv("BERRYUP_CONFIGS_URL");
+        return custom != null && !custom.trim().isEmpty() ? custom : CONFIGS_URL;
+    }
     public static final String PRISM_URL = "https://prismlauncher.org/download/windows/";
     public static final String PINE_URL = "https://pineconemc.com/download/";
 

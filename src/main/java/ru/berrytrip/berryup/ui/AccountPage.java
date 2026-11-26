@@ -126,7 +126,7 @@ public class AccountPage extends JPanel {
         nickField.setForeground(Color.WHITE);
         nickField.setCaretColor(Palette.ACCENT_2);
         nickField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Palette.alpha(Color.WHITE, 55), 1),
+                BorderFactory.createLineBorder(Palette.alpha(Color.WHITE, 55), 2),
                 BorderFactory.createEmptyBorder(9, 12, 9, 12)));
         nickField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         nickField.setPreferredSize(new Dimension(300, 44));
@@ -134,14 +134,14 @@ public class AccountPage extends JPanel {
             @Override
             public void focusGained(java.awt.event.FocusEvent event) {
                 nickField.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(Palette.ACCENT_2, 1),
+                        BorderFactory.createLineBorder(Palette.ACCENT_2, 2),
                         BorderFactory.createEmptyBorder(9, 12, 9, 12)));
             }
 
             @Override
             public void focusLost(java.awt.event.FocusEvent event) {
                 nickField.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(Palette.alpha(Color.WHITE, 55), 1),
+                        BorderFactory.createLineBorder(Palette.alpha(Color.WHITE, 55), 2),
                         BorderFactory.createEmptyBorder(9, 12, 9, 12)));
             }
         });
@@ -748,7 +748,7 @@ public class AccountPage extends JPanel {
             setOpaque(false);
             setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
             setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 1, 0, 0, Palette.LINE),
+                    BorderFactory.createMatteBorder(0, 2, 0, 0, Palette.LINE),
                     BorderFactory.createEmptyBorder(14, 14, 14, 14)));
             setPreferredSize(new Dimension(218, 242));
 
@@ -757,7 +757,7 @@ public class AccountPage extends JPanel {
             thumb.setMaximumSize(new Dimension(190, 108));
             thumb.setOpaque(true);
             thumb.setBackground(Palette.SURFACE_ALT);
-            thumb.setBorder(BorderFactory.createLineBorder(Palette.LINE, 1, true));
+            thumb.setBorder(BorderFactory.createLineBorder(Palette.LINE, 2, false));
             add(thumb);
             add(Box.createVerticalStrut(10));
 
@@ -873,7 +873,7 @@ public class AccountPage extends JPanel {
             g.fillRect(bx + block * 2, by - block, block, block);
             g.dispose();
             g = Palette.quality(graphics);
-            g.setStroke(new java.awt.BasicStroke(1f));
+            g.setStroke(new java.awt.BasicStroke(2f));
             g.setColor(Palette.alpha(Palette.ACCENT, 92));
             g.draw(outer);
             g.setColor(Palette.ACCENT);
@@ -913,7 +913,7 @@ public class AccountPage extends JPanel {
             g.fillRect(w - 76, 0, 76, 76);
             g.dispose();
             g = Palette.quality(graphics);
-            g.setStroke(new java.awt.BasicStroke(1f));
+            g.setStroke(new java.awt.BasicStroke(2f));
             g.setColor(Palette.LINE);
             g.draw(outer);
             g.dispose();

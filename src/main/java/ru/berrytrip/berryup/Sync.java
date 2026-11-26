@@ -67,26 +67,34 @@ public final class Sync {
         File bootstrap = prism.bootstrapJar();
         if (!bootstrap.isFile()) throw new Exception("нет packwiz-installer-bootstrap.jar в папке сборки");
 
-        Tweaks.restore(prism);
-        Log.info("Обновление сборки через packwiz…");
-        ProcessBuilder builder = new ProcessBuilder(
-                java.getAbsolutePath(), "-jar", bootstrap.getName(), "-g", Cfg.PACK_URL);
-        builder.directory(prism.minecraftDir());
-        builder.redirectErrorStream(true);
-        Process process = builder.start();
+        // packwiz перезаписывает config/, options.txt и servers.dat. Снимаем
+        // копию и возвращаем её после обновления: чужие настройки не трогаем.
+        File snapshot = Configs.snapshot(prism);
+        try {
+            Tweaks.restore(prism);
+            Log.info("Обновление сборки через packwiz…");
+            ProcessBuilder builder = new ProcessBuilder(
+                    java.getAbsolutePath(), "-jar", bootstrap.getName(), "-g", Cfg.PACK_URL);
+            builder.directory(prism.minecraftDir());
+            builder.redirectErrorStream(true);
+            Process process = builder.start();
 
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String trimmed = line.trim();
-            if (!trimmed.isEmpty()) Log.info(trimmed);
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimmed = line.trim();
+                if (!trimmed.isEmpty()) Log.info(trimmed);
+            }
+            int code = process.waitFor();
+            Configs.restore(prism, snapshot);
+            Tweaks.applyAll(prism);
+            if (code == 0) Log.ok("Сборка обновлена, конфиги сохранены.");
+            else Log.error("packwiz завершился с кодом " + code + ".");
+            return code;
+        } finally {
+            Configs.discard(snapshot);
         }
-        int code = process.waitFor();
-        Tweaks.applyAll(prism);
-        if (code == 0) Log.ok("Сборка обновлена.");
-        else Log.error("packwiz завершился с кодом " + code + ".");
-        return code;
     }
 
     /** Запускает Prism: обычный старт или сразу с входом на выбранный сервер. */
@@ -144,7 +152,7 @@ public final class Sync {
     }
 
     /** Распаковка с защитой от путей вида ../. */
-    private static void unzip(File zip, File target) throws Exception {
+    public static void unzip(File zip, File target) throws Exception {
         if (!target.isDirectory() && !target.mkdirs()) throw new Exception("не удалось создать " + target);
         ZipInputStream stream = new ZipInputStream(new FileInputStream(zip));
         try {

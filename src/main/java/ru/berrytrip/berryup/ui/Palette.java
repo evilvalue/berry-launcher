@@ -2,7 +2,6 @@ package ru.berrytrip.berryup.ui;
 
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.LinearGradientPaint;
@@ -17,91 +16,48 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Палитра BerryUp. Две темы — светлая и тёмная — и пиксельный Monocraft,
- * собранный по мотивам шрифта Minecraft (OFL, поддерживает кириллицу).
+ * Палитра BerryUp: только тёмная пиксельная тема и Monocraft — шрифт,
+ * собранный по мотивам Minecraft (OFL, поддерживает кириллицу).
+ *
+ * <p>Пиксельный стиль — это жёсткие углы, рамки в 2 пикселя, тени без
+ * размытия и ограниченная палитра. Поэтому все «скругления» ниже рисуются
+ * обычными прямоугольниками, а тень — смещённым тёмным квадратом.</p>
  */
 public final class Palette {
 
-    public static Color BG;
-    public static Color BG_SOFT;
-    public static Color SURFACE;
-    public static Color SURFACE_ALT;
-    public static Color HOVER;
-    public static Color LINE;
-    public static Color FG;
-    public static Color MUTED;
-    public static Color DIM;
-    public static Color ACCENT;
-    public static Color ACCENT_HOVER;
-    public static Color ACCENT_DEEP;
-    public static Color ACCENT_2;
-    public static Color VIOLET;
-    public static Color OK;
-    public static Color WARN;
-    public static Color ERR;
-    public static Color TELEGRAM;
-    public static Color ON_ACCENT;
+    public static final Color BG = new Color(0x0E1015);
+    public static final Color BG_SOFT = new Color(0x12151B);
+    public static final Color SURFACE = new Color(0x171B23);
+    public static final Color SURFACE_ALT = new Color(0x20252F);
+    public static final Color HOVER = new Color(0x2A303C);
+    public static final Color LINE = new Color(0x39404F);
+    public static final Color LINE_SOFT = new Color(0x282E3A);
+    public static final Color SHADOW = new Color(0x07080C);
 
-    private static boolean dark;
+    public static final Color FG = new Color(0xF2F4F8);
+    public static final Color MUTED = new Color(0xA9B2C3);
+    public static final Color DIM = new Color(0x747E90);
+
+    public static final Color ACCENT = new Color(0xFF5D86);
+    public static final Color ACCENT_HOVER = new Color(0xFF7C9E);
+    public static final Color ACCENT_DEEP = new Color(0xB62E52);
+    public static final Color ACCENT_2 = new Color(0xFFA36B);
+    public static final Color VIOLET = new Color(0x9B87FF);
+    public static final Color OK = new Color(0x4BE39F);
+    public static final Color WARN = new Color(0xF5B942);
+    public static final Color ERR = new Color(0xFF6E7B);
+    public static final Color TELEGRAM = new Color(0x38AEE0);
+    public static final Color ON_ACCENT = new Color(0x1A0B11);
+
     private static final Map<String, Font> FONTS = new HashMap<String, Font>();
     private static final Font PIXEL_REG = loadFont("/Monocraft.ttf");
     private static final Font PIXEL_SEMI = loadFont("/Monocraft-SemiBold.ttf");
-
-    static {
-        applyTheme(false);
-    }
 
     private Palette() {
     }
 
     public static boolean isDark() {
-        return dark;
-    }
-
-    /** Переключает цвета. Компоненты читают их во время отрисовки, поэтому окно пересоздаётся. */
-    public static void applyTheme(boolean darkTheme) {
-        dark = darkTheme;
-        if (darkTheme) {
-            BG = new Color(0x14161B);
-            BG_SOFT = new Color(0x191C22);
-            SURFACE = new Color(0x1E2229);
-            SURFACE_ALT = new Color(0x262B34);
-            HOVER = new Color(0x303641);
-            LINE = new Color(0x383F4B);
-            FG = new Color(0xF1F3F8);
-            MUTED = new Color(0xA9B0BE);
-            DIM = new Color(0x7A8292);
-            ACCENT = new Color(0xFF5D86);
-            ACCENT_HOVER = new Color(0xFF7CA0);
-            ACCENT_DEEP = new Color(0xE53A67);
-            ACCENT_2 = new Color(0xFFA36B);
-            VIOLET = new Color(0x9B87FF);
-            OK = new Color(0x43DD9A);
-            WARN = new Color(0xF2B544);
-            ERR = new Color(0xFF6E7B);
-            TELEGRAM = new Color(0x38AEE0);
-            ON_ACCENT = Color.WHITE;
-        } else {
-            BG = new Color(0xF3F4F8);
-            BG_SOFT = new Color(0xF8F9FC);
-            SURFACE = new Color(0xFFFFFF);
-            SURFACE_ALT = new Color(0xF2F3F8);
-            HOVER = new Color(0xE8EAF2);
-            LINE = new Color(0xE1E4ED);
-            FG = new Color(0x15171F);
-            MUTED = new Color(0x5E6473);
-            DIM = new Color(0x969CAB);
-            ACCENT = new Color(0xE63A63);
-            ACCENT_HOVER = new Color(0xF1527A);
-            ACCENT_DEEP = new Color(0xC22850);
-            ACCENT_2 = new Color(0xFF7E5F);
-            VIOLET = new Color(0x6E5BF6);
-            OK = new Color(0x0F9D68);
-            WARN = new Color(0xB8790A);
-            ERR = new Color(0xD23545);
-            TELEGRAM = new Color(0x1F9AD6);
-            ON_ACCENT = Color.WHITE;
-        }
+        return true;
     }
 
     public static Font reg(float size) {
@@ -168,39 +124,41 @@ public final class Palette {
                 new Color[]{ACCENT, ACCENT_2});
     }
 
+    /** Карточки плоские: глубину даёт жёсткая тень, а не градиент. */
     public static Paint cardGradient(int w, int h) {
-        if (dark) {
-            return new GradientPaint(0, 0, new Color(0x20242C), 0, Math.max(1, h), new Color(0x1B1F26));
-        }
-        return new GradientPaint(0, 0, Color.WHITE, 0, Math.max(1, h), new Color(0xFDFDFF));
+        return SURFACE;
     }
 
+    /** Фон окна — один цвет; сетку и ягодки рисует Backdrop. */
     public static Paint backdrop(int w, int h) {
-        if (dark) {
-            return new GradientPaint(0, 0, new Color(0x17191E), 0, Math.max(1, h),
-                    new Color(0x111318));
-        }
-        return new GradientPaint(0, 0, new Color(0xF7F8FA), 0, Math.max(1, h),
-                new Color(0xEDEFF4));
+        return BG;
+    }
+
+    /** Пиксельная тень: смещённый прямоугольник без размытия. */
+    public static void hardShadow(Graphics2D g, int x, int y, int w, int h, int offset) {
+        int size = Math.max(1, offset);
+        g.setColor(SHADOW);
+        g.fillRect(x + size, y + size, w, h);
     }
 
     public static Shape round(int x, int y, int w, int h, int radius) {
-        return new RoundRectangle2D.Float(x, y, w, h, radius * 2, radius * 2);
+        return new RoundRectangle2D.Float(x, y, w, h, 0, 0);
     }
 
+    /** Радиус намеренно игнорируется: в пиксельном стиле углы прямые. */
     public static void fillRound(Graphics2D g, int x, int y, int w, int h, int radius, Color color) {
         g.setColor(color);
-        g.fill(round(x, y, w, h, radius));
+        g.fillRect(x, y, w, h);
     }
 
     public static void fillRound(Graphics2D g, int x, int y, int w, int h, int radius, Paint paint) {
         g.setPaint(paint);
-        g.fill(round(x, y, w, h, radius));
+        g.fillRect(x, y, w, h);
     }
 
     public static void strokeRound(Graphics2D g, int x, int y, int w, int h, int radius, Color color) {
         g.setColor(color);
-        g.draw(round(x, y, w, h, radius));
+        g.drawRect(x, y, w, h);
     }
 
     public static Graphics2D quality(java.awt.Graphics g) {
@@ -213,7 +171,7 @@ public final class Palette {
         copy.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         copy.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
         copy.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         return copy;
     }
 
@@ -240,10 +198,6 @@ public final class Palette {
     }
 
     public static void shadow(Graphics2D g, int x, int y, int w, int h, int radius) {
-        for (int layer = 3; layer >= 1; layer--) {
-            g.setColor(dark ? new Color(0, 0, 0, 26) : new Color(20, 24, 40, 5));
-            g.fill(round(x + layer, y + layer + 1, Math.max(1, w - layer * 2), Math.max(1, h - layer * 2),
-                    radius));
-        }
+        hardShadow(g, x, y, w, h, 3);
     }
 }

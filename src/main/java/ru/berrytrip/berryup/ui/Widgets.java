@@ -19,7 +19,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.LayoutManager;
 import java.awt.Rectangle;
 import java.awt.event.FocusAdapter;
@@ -35,7 +34,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Элементы интерфейса BerryUp: светлые карточки, плоские кнопки, аккуратные переключатели. */
+/**
+ * Элементы интерфейса BerryUp. Всё нарисовано по правилам пиксель-арта:
+ * прямые углы, рамки в 2 пикселя, жёсткая тень без размытия, ограниченная
+ * палитра. Единственные непиксельные элементы — 3D-модель скина и логотип.
+ */
 public final class Widgets {
 
     private Widgets() {
@@ -75,6 +78,28 @@ public final class Widgets {
         area.setBorder(null);
         area.setRows(Math.max(1, text.split("\n").length));
         return area;
+    }
+
+    /** Пиксельная иконка из символьной карты: '.' — прозрачно, остальное — цвета. */
+    public static void pixelArt(Graphics2D g, int x, int y, int cell, String[] rows,
+                                Color[] colors, char[] keys) {
+        for (int row = 0; row < rows.length; row++) {
+            String line = rows[row];
+            for (int col = 0; col < line.length(); col++) {
+                char ch = line.charAt(col);
+                if (ch == '.' || ch == ' ') continue;
+                Color color = null;
+                for (int i = 0; i < keys.length; i++) {
+                    if (keys[i] == ch) {
+                        color = colors[i];
+                        break;
+                    }
+                }
+                if (color == null) continue;
+                g.setColor(color);
+                g.fillRect(x + col * cell, y + row * cell, cell, cell);
+            }
+        }
     }
 
     /** Небольшая цветная плашка: «готово к игре», «GIF», «3D» и т. п. */
@@ -123,9 +148,9 @@ public final class Widgets {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, 3, Palette.mix(Palette.SURFACE, color, 0.10f));
-            g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 3, Palette.alpha(color, 60));
+            Palette.fillRound(g, 0, 0, w, h, 0, Palette.mix(Palette.SURFACE, color, 0.12f));
+            g.setStroke(new BasicStroke(2f));
+            Palette.strokeRound(g, 1, 1, w - 3, h - 3, 0, Palette.alpha(color, 120));
             g.setFont(getFont());
             g.setColor(color);
             java.awt.FontMetrics metrics = g.getFontMetrics();
@@ -138,7 +163,6 @@ public final class Widgets {
     // ------------------------------------------------------------- карточка
 
     public static class Card extends JPanel {
-        private final int radius;
         private boolean outline = true;
         private Color tint;
 
@@ -148,7 +172,6 @@ public final class Widgets {
 
         public Card(LayoutManager layout) {
             super(layout);
-            radius = 6;
             setOpaque(false);
         }
 
@@ -175,31 +198,43 @@ public final class Widgets {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            if (w <= 2 || h <= 2) {
+            if (w <= 4 || h <= 4) {
                 g.dispose();
                 return;
             }
-            java.awt.Paint paint = tint == null
-                    ? Palette.cardGradient(w, h)
-                    : new java.awt.GradientPaint(0, 0, Palette.mix(Palette.SURFACE, tint, 0.07f),
-                    0, h, Palette.mix(Palette.SURFACE, tint, 0.02f));
-            Palette.fillRound(g, 0, 0, w, h, radius, paint);
+            int cw = w - 4;
+            int ch = h - 4;
+            Palette.hardShadow(g, 0, 0, cw, ch, 4);
+            Color base = tint == null ? Palette.SURFACE : Palette.mix(Palette.SURFACE, tint, 0.09f);
+            Palette.fillRound(g, 0, 0, cw, ch, 0, base);
             if (outline) {
-                g.setStroke(new BasicStroke(1f));
-                Palette.strokeRound(g, 0, 0, w - 1, h - 1, radius,
-                        tint == null ? Palette.LINE : Palette.alpha(tint, 70));
+                g.setStroke(new BasicStroke(2f));
+                Palette.strokeRound(g, 1, 1, cw - 2, ch - 2, 0,
+                        tint == null ? Palette.LINE : Palette.alpha(tint, 180));
             }
+            // Внутренняя светлая грань — объём без градиентов.
+            g.setColor(Palette.alpha(Palette.FG, 8));
+            g.drawLine(3, 3, cw - 4, 3);
+            g.drawLine(3, 3, 3, ch - 4);
             g.dispose();
             super.paintComponent(graphics);
         }
     }
 
-    /** Фон окна: спокойный нейтральный градиент без цветных пятен. */
+    /** Фон окна: тёмная сетка и пара пиксельных ягод в углу. */
     public static class Backdrop extends JPanel {
+        private static BufferedImage berry;
+
         public Backdrop(LayoutManager layout) {
             super(layout);
             setOpaque(true);
             setBackground(Palette.BG);
+            if (berry == null) {
+                try (InputStream stream = Backdrop.class.getResourceAsStream("/berry.png")) {
+                    if (stream != null) berry = ImageIO.read(stream);
+                } catch (Exception ignored) {
+                }
+            }
         }
 
         @Override
@@ -210,6 +245,22 @@ public final class Widgets {
             int h = getHeight();
             g.setPaint(Palette.backdrop(w, h));
             g.fillRect(0, 0, w, h);
+
+            g.setColor(Palette.alpha(Palette.FG, 5));
+            for (int x = 0; x < w; x += 32) g.drawLine(x, 0, x, h);
+            for (int y = 0; y < h; y += 32) g.drawLine(0, y, w, y);
+
+            if (berry != null) {
+                g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                        java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                        java.awt.AlphaComposite.SRC_OVER, 0.16f));
+                g.drawImage(berry, w - 104, h - 110, 64, 64, null);
+                g.setComposite(java.awt.AlphaComposite.getInstance(
+                        java.awt.AlphaComposite.SRC_OVER, 0.10f));
+                g.drawImage(berry, w - 156, h - 58, 30, 30, null);
+                g.setComposite(java.awt.AlphaComposite.SrcOver);
+            }
             g.dispose();
         }
     }
@@ -232,7 +283,7 @@ public final class Widgets {
 
         @Override
         public int getScrollableUnitIncrement(Rectangle visible, int orientation, int direction) {
-            return 22;
+            return 24;
         }
 
         @Override
@@ -259,8 +310,8 @@ public final class Widgets {
         pane.getViewport().setOpaque(false);
         pane.setHorizontalScrollBarPolicy(javax.swing.JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         pane.setVerticalScrollBarPolicy(javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        pane.getVerticalScrollBar().setUnitIncrement(22);
-        pane.getVerticalScrollBar().setPreferredSize(new Dimension(8, 48));
+        pane.getVerticalScrollBar().setUnitIncrement(24);
+        pane.getVerticalScrollBar().setPreferredSize(new Dimension(10, 48));
         return pane;
     }
 
@@ -278,7 +329,7 @@ public final class Widgets {
 
         @Override
         public int getScrollableUnitIncrement(Rectangle visible, int orientation, int direction) {
-            return 22;
+            return 24;
         }
 
         @Override
@@ -335,8 +386,9 @@ public final class Widgets {
         @Override
         public Dimension getPreferredSize() {
             Dimension size = super.getPreferredSize();
-            int extra = kind == Kind.NAV ? 26 : 34;
-            return new Dimension(size.width + extra, Math.max(kind == Kind.NAV ? 34 : 40, size.height + 14));
+            int extra = kind == Kind.NAV ? 26 : 36;
+            return new Dimension(size.width + extra,
+                    Math.max(kind == Kind.NAV ? 32 : 42, size.height + 14));
         }
 
         @Override
@@ -346,6 +398,10 @@ public final class Widgets {
             int h = getHeight();
             boolean enabled = isEnabled();
             boolean pressed = getModel().isPressed();
+            int shadow = kind == Kind.GHOST || kind == Kind.NAV ? 0 : 3;
+            int cw = w - shadow;
+            int ch = h - shadow;
+
             Color fill = null;
             Color text;
             Color border = null;
@@ -353,21 +409,23 @@ public final class Widgets {
             switch (kind) {
                 case PRIMARY:
                     fill = pressed ? Palette.ACCENT_DEEP : (hover && enabled ? Palette.ACCENT_HOVER : Palette.ACCENT);
+                    border = Palette.ACCENT_DEEP;
                     text = Palette.ON_ACCENT;
                     break;
                 case SECONDARY:
                     fill = hover && enabled ? Palette.SURFACE_ALT : Palette.SURFACE;
-                    border = hover && enabled ? Palette.alpha(Palette.ACCENT, 90) : Palette.LINE;
+                    border = hover && enabled ? Palette.ACCENT : Palette.LINE;
                     text = Palette.FG;
                     break;
                 case DANGER:
-                    fill = hover && enabled ? Palette.mix(Palette.SURFACE, Palette.ERR, 0.12f)
-                            : Palette.mix(Palette.SURFACE, Palette.ERR, 0.07f);
+                    fill = hover && enabled ? Palette.mix(Palette.SURFACE, Palette.ERR, 0.16f)
+                            : Palette.mix(Palette.SURFACE, Palette.ERR, 0.08f);
+                    border = Palette.alpha(Palette.ERR, 180);
                     text = Palette.ERR;
                     break;
                 case NAV:
                     if (isSelected()) {
-                        fill = Palette.SURFACE;
+                        fill = Palette.SURFACE_ALT;
                         border = Palette.LINE;
                         text = Palette.FG;
                     } else {
@@ -378,6 +436,7 @@ public final class Widgets {
                 case GHOST:
                 default:
                     fill = hover && enabled ? Palette.SURFACE_ALT : null;
+                    border = hover && enabled ? Palette.LINE : null;
                     text = hover && enabled ? Palette.FG : Palette.MUTED;
                     break;
             }
@@ -388,32 +447,30 @@ public final class Widgets {
                 border = Palette.LINE;
             }
 
-            int radius = 3;
-            if (fill != null) {
-                Palette.fillRound(g, 0, 0, w, h, radius, fill);
-            }
+            if (shadow > 0) Palette.hardShadow(g, 0, 0, cw, ch, shadow);
+            if (fill != null) Palette.fillRound(g, 0, 0, cw, ch, 0, fill);
             if (border != null) {
-                g.setStroke(new BasicStroke(1f));
-                Palette.strokeRound(g, 0, 0, w - 1, h - 1, radius, border);
+                g.setStroke(new BasicStroke(2f));
+                Palette.strokeRound(g, 1, 1, cw - 2, ch - 2, 0, border);
             }
             if (isFocusOwner()) {
-                g.setStroke(new BasicStroke(1.4f));
-                Palette.strokeRound(g, 1, 1, w - 3, h - 3, radius, Palette.alpha(Palette.ACCENT, 140));
+                g.setStroke(new BasicStroke(2f));
+                Palette.strokeRound(g, 3, 3, cw - 6, ch - 6, 0, Palette.alpha(Palette.ACCENT, 190));
             }
 
             g.setFont(getFont());
             g.setColor(text);
             java.awt.FontMetrics metrics = g.getFontMetrics();
-            int x = (w - metrics.stringWidth(getText())) / 2;
-            int y = (h - metrics.getHeight()) / 2 + metrics.getAscent();
+            int x = (cw - metrics.stringWidth(getText())) / 2;
+            int y = (ch - metrics.getHeight()) / 2 + metrics.getAscent();
             g.drawString(getText(), Math.max(6, x), y);
             g.dispose();
         }
     }
 
     /**
-     * Кнопка для тёмной hero-сцены: срезанные углы вместо скруглений,
-     * пиксельная тень и опциональная иконка Telegram.
+     * Кнопка для тёмной hero-сцены: срезанные углы, пиксельная тень и
+     * опциональная иконка Telegram.
      */
     public static class PixelButton extends JButton {
         public enum Tone {PRIMARY, SECONDARY, GHOST}
@@ -482,42 +539,34 @@ public final class Widgets {
             }
             boolean enabled = isEnabled();
             boolean pressed = getModel().isPressed();
-            java.awt.Shape shape = pixelShape(w, h - 2, 4);
+            java.awt.Shape shape = pixelShape(w - 3, h - 3, 4);
 
             Color textColor;
             if (tone == Tone.PRIMARY) {
-                g.setColor(new Color(0, 0, 0, 80));
-                g.fill(pixelShape(3, h - 2, 4));
-                g.setPaint(Palette.accentGradient(0, 0, w, h));
-                if (!enabled) {
-                    g.setColor(Palette.mix(Palette.ACCENT, new Color(0x241C28), 0.62f));
-                } else if (pressed) {
-                    g.setColor(Palette.ACCENT_DEEP);
-                } else if (hover) {
-                    g.setColor(Palette.ACCENT_HOVER);
-                }
+                g.setColor(Palette.SHADOW);
+                g.fill(pixelShape(w - 3, h - 3, 4));
+                g.setColor(pressed ? Palette.ACCENT_DEEP : (hover && enabled ? Palette.ACCENT_HOVER : Palette.ACCENT));
+                if (!enabled) g.setColor(Palette.mix(Palette.ACCENT, Palette.SHADOW, 0.6f));
                 g.fill(shape);
-                g.setColor(Palette.alpha(Color.WHITE, 55));
+                g.setColor(Palette.ACCENT_DEEP);
                 g.draw(shape);
-                textColor = enabled ? Palette.ON_ACCENT : Palette.alpha(Color.WHITE, 130);
+                textColor = enabled ? Palette.ON_ACCENT : Palette.alpha(Palette.ON_ACCENT, 130);
             } else if (tone == Tone.SECONDARY) {
-                g.setColor(hover && enabled
-                        ? Palette.alpha(Color.WHITE, 24)
-                        : Palette.alpha(Color.WHITE, 12));
+                g.setColor(Palette.SHADOW);
+                g.fill(pixelShape(w - 3, h - 3, 4));
+                g.setColor(hover && enabled ? Palette.SURFACE_ALT : Palette.SURFACE);
                 g.fill(shape);
-                g.setColor(hover && enabled
-                        ? Palette.alpha(Palette.ACCENT, 130)
-                        : Palette.alpha(Color.WHITE, 54));
+                g.setColor(hover && enabled ? Palette.ACCENT : Palette.LINE);
                 g.draw(shape);
-                textColor = enabled ? new Color(0xF4EDF7) : Palette.alpha(Color.WHITE, 100);
+                textColor = enabled ? Palette.FG : Palette.DIM;
             } else {
                 if (hover && enabled) {
-                    g.setColor(Palette.alpha(Color.WHITE, 10));
+                    g.setColor(Palette.SURFACE_ALT);
                     g.fill(shape);
                 }
-                g.setColor(hover && enabled ? Palette.alpha(Palette.ACCENT, 90) : Palette.alpha(Color.WHITE, 30));
+                g.setColor(hover && enabled ? Palette.ACCENT : Palette.alpha(Palette.FG, 60));
                 g.draw(shape);
-                textColor = enabled ? Palette.alpha(Color.WHITE, 175) : Palette.alpha(Color.WHITE, 80);
+                textColor = enabled ? Palette.MUTED : Palette.DIM;
             }
 
             g.setFont(getFont());
@@ -527,12 +576,8 @@ public final class Widgets {
             int x = Math.max(10, (w - total) / 2);
             int y = (h - metrics.getHeight()) / 2 + metrics.getAscent();
             if (telegram) {
-                int cx = x + 7;
-                int cy = h / 2 - 1;
                 g.setColor(textColor);
-                g.fillPolygon(new java.awt.Polygon(
-                        new int[]{cx - 6, cx + 7, cx + 1, cx - 3},
-                        new int[]{cy + 1, cy - 5, cy + 6, cy + 2}, 4));
+                drawTelegram(g, x, h / 2 - 6, 2);
                 x += icon;
             }
             g.setColor(textColor);
@@ -641,29 +686,32 @@ public final class Widgets {
             int w = getWidth();
             int h = getHeight();
 
-            int trackW = 42;
+            int trackW = 46;
             int trackH = 24;
             int tx = w - trackW - 2;
-            int ty = hint == null || hint.isEmpty() ? (h - trackH) / 2 : 8;
+            int ty = hint == null || hint.isEmpty() ? (h - trackH) / 2 : 6;
 
             Color track = selected ? Palette.ACCENT : (hover ? Palette.HOVER
                     : Palette.mix(Palette.SURFACE_ALT, Palette.LINE, 0.6f));
             if (!isEnabled()) track = Palette.mix(Palette.SURFACE_ALT, Palette.LINE, 0.6f);
-            Palette.fillRound(g, tx, ty, trackW, trackH, 12, track);
-            if (!selected) {
-                g.setStroke(new BasicStroke(1f));
-                Palette.strokeRound(g, tx, ty, trackW - 1, trackH - 1, 12, Palette.LINE);
-            }
-            int knob = 18;
-            int kx = selected ? tx + trackW - knob - 3 : tx + 3;
-            g.setColor(new Color(0, 0, 0, 22));
-            g.fillOval(kx, ty + 4, knob, knob);
-            g.setColor(Color.WHITE);
-            g.fillOval(kx, ty + 3, knob, knob);
+            Palette.fillRound(g, tx, ty, trackW, trackH, 0, track);
+            g.setStroke(new BasicStroke(2f));
+            Palette.strokeRound(g, tx + 1, ty + 1, trackW - 2, trackH - 2, 0,
+                    selected ? Palette.ACCENT_DEEP : Palette.LINE);
+
+            int knob = 16;
+            int kx = selected ? tx + trackW - knob - 4 : tx + 4;
+            int ky = ty + 4;
+            g.setColor(Palette.SHADOW);
+            g.fillRect(kx + 2, ky + 2, knob, knob);
+            g.setColor(selected ? Palette.FG : Palette.MUTED);
+            g.fillRect(kx, ky, knob, knob);
+            g.setColor(selected ? Palette.ACCENT_DEEP : Palette.LINE);
+            g.drawRect(kx, ky, knob, knob);
 
             if (focus) {
-                g.setStroke(new BasicStroke(1.4f));
-                Palette.strokeRound(g, 0, 0, w - 1, h - 1, 10, Palette.alpha(Palette.ACCENT, 120));
+                g.setStroke(new BasicStroke(2f));
+                Palette.strokeRound(g, 0, 0, w - 1, h - 1, 0, Palette.alpha(Palette.ACCENT, 150));
             }
 
             int textW = Math.max(20, tx - 12);
@@ -700,7 +748,7 @@ public final class Widgets {
             setOpaque(false);
             setFocusable(true);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setPreferredSize(new Dimension(300, 72));
+            setPreferredSize(new Dimension(300, 74));
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
@@ -752,56 +800,79 @@ public final class Widgets {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            if (w <= 2 || h <= 2) {
+            if (w <= 4 || h <= 4) {
                 g.dispose();
                 return;
             }
-
-            Palette.fillRound(g, 0, 0, w, h, 18,
-                    hover ? Palette.mix(Palette.SURFACE, Palette.ACCENT, 0.04f) : Palette.SURFACE);
-            g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 18,
-                    hover || focus ? Palette.alpha(Palette.ACCENT, 120) : Palette.LINE);
+            int cw = w - 4;
+            int ch = h - 4;
+            Palette.hardShadow(g, 0, 0, cw, ch, 4);
+            Palette.fillRound(g, 0, 0, cw, ch, 0,
+                    hover ? Palette.mix(Palette.SURFACE, Palette.ACCENT, 0.05f) : Palette.SURFACE);
+            g.setStroke(new BasicStroke(2f));
+            Palette.strokeRound(g, 1, 1, cw - 2, ch - 2, 0,
+                    hover || focus ? Palette.ACCENT : Palette.LINE);
 
             Color tone = glyph == Glyph.TELEGRAM ? Palette.TELEGRAM : Palette.ACCENT;
             int badge = 42;
             int bx = 14;
-            int by = (h - badge) / 2;
-            Palette.fillRound(g, bx, by, badge, badge, 13, Palette.mix(Palette.SURFACE, tone, 0.12f));
+            int by = (ch - badge) / 2;
+            Palette.fillRound(g, bx, by, badge, badge, 0,
+                    Palette.mix(Palette.SURFACE, tone, 0.14f));
+            g.setStroke(new BasicStroke(2f));
+            Palette.strokeRound(g, bx + 1, by + 1, badge - 2, badge - 2, 0, Palette.alpha(tone, 170));
 
             g.setColor(tone);
-            g.setStroke(new BasicStroke(1.7f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            int cx = bx + badge / 2;
-            int cy = by + badge / 2;
             if (glyph == Glyph.TELEGRAM) {
-                int[] xs = {cx - 8, cx + 8, cx + 3, cx - 2};
-                int[] ys = {cy + 1, cy - 6, cy + 6, cy + 1};
-                g.fillPolygon(new java.awt.Polygon(xs, ys, 4));
+                drawTelegram(g, bx + 10, by + 13, 2);
             } else {
-                int r = 8;
-                g.drawOval(cx - r, cy - r, r * 2, r * 2);
-                g.drawLine(cx - r, cy, cx + r, cy);
-                g.drawOval(cx - r / 2, cy - r, r, r * 2);
+                drawGlobe(g, bx + 12, by + 12, 2);
             }
 
-            int textX = bx + badge + 13;
-            int textW = Math.max(60, w - textX - 34);
+            int textX = bx + badge + 14;
+            int textW = Math.max(60, cw - textX - 26);
             g.setFont(Palette.semi(10.5f));
             g.setColor(Palette.FG);
-            g.drawString(clip(caption, g, textW), textX, h / 2 - 2);
+            g.drawString(clip(caption, g, textW), textX, ch / 2 - 2);
             g.setFont(Palette.reg(9f));
             g.setColor(Palette.MUTED);
-            g.drawString(clip(detail, g, textW), textX, h / 2 + 16);
+            g.drawString(clip(detail, g, textW), textX, ch / 2 + 16);
 
-            int ax = w - 22;
-            int ay = h / 2;
+            int ax = cw - 22;
+            int ay = ch / 2;
             g.setColor(hover || focus ? Palette.ACCENT : Palette.DIM);
-            g.setStroke(new BasicStroke(1.7f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-            g.drawLine(ax - 5, ay, ax + 4, ay);
-            g.drawLine(ax, ay - 4, ax + 4, ay);
-            g.drawLine(ax, ay + 4, ax + 4, ay);
+            for (int i = 0; i < 3; i++) {
+                g.fillRect(ax + i * 3, ay - 4 + i * 3, 3, 3);
+            }
             g.dispose();
         }
+    }
+
+    private static void drawGlobe(Graphics2D g, int x, int y, int cell) {
+        String[] rows = {
+                ".#####.",
+                "#..#..#",
+                "#.###.#",
+                "##...##",
+                "#.###.#",
+                "#..#..#",
+                ".#####."
+        };
+        pixelArt(g, x, y, cell, rows, new Color[]{g.getColor()}, new char[]{'#'});
+    }
+
+    private static void drawTelegram(Graphics2D g, int x, int y, int cell) {
+        String[] rows = {
+                ".......#",
+                "......##",
+                ".....##.",
+                "....##..",
+                ".#.##...",
+                "####....",
+                ".##.....",
+                "#......."
+        };
+        pixelArt(g, x, y, cell, rows, new Color[]{g.getColor()}, new char[]{'#'});
     }
 
     // ------------------------------------------------------------- логотип
@@ -835,8 +906,8 @@ public final class Widgets {
                 g.drawImage(image, 0, 0, size, size, null);
             } else {
                 g.setColor(Palette.ACCENT);
-                g.fillRoundRect(0, 0, size, size, size / 3, size / 3);
-                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, size, size);
+                g.setColor(Palette.ON_ACCENT);
                 g.setFont(Palette.bold(size * 0.45f));
                 g.drawString("B", size / 3, (int) (size * 0.68));
             }
@@ -892,9 +963,9 @@ public final class Widgets {
             Graphics2D g = Palette.quality(graphics);
             int w = getWidth();
             int h = getHeight();
-            Palette.fillRound(g, 0, 0, w, h, 4, Palette.SURFACE_ALT);
-            g.setStroke(new BasicStroke(1f));
-            Palette.strokeRound(g, 0, 0, w - 1, h - 1, 4, Palette.LINE);
+            Palette.fillRound(g, 0, 0, w, h, 0, Palette.SURFACE_ALT);
+            g.setStroke(new BasicStroke(2f));
+            Palette.strokeRound(g, 1, 1, w - 3, h - 3, 0, Palette.LINE);
             g.dispose();
             super.paintComponent(graphics);
         }
@@ -974,21 +1045,32 @@ public final class Widgets {
             int w = getWidth();
             int h = getHeight();
             int pad = 12;
-            int trackY = h / 2 - 3;
+            int trackY = h / 2 - 5;
             int trackW = Math.max(1, w - pad * 2);
-            Palette.fillRound(g, pad, trackY, trackW, 6, 3,
-                    Palette.mix(Palette.SURFACE_ALT, Palette.LINE, 0.7f));
+            Palette.fillRound(g, pad, trackY, trackW, 10, 0, Palette.SURFACE_ALT);
+            g.setStroke(new BasicStroke(2f));
+            Palette.strokeRound(g, pad + 1, trackY + 1, trackW - 2, 8, 0, Palette.LINE);
             int filled = (int) (trackW * (value - min) / (double) (max - min));
-            Palette.fillRound(g, pad, trackY, Math.max(6, filled), 6, 3, Palette.ACCENT);
-            int knob = 18;
+            if (filled > 0) {
+                Palette.fillRound(g, pad + 2, trackY + 2, Math.max(4, filled - 2), 6, 0, Palette.ACCENT);
+            }
+
+            int step = Math.max(1, (max - min) / 16);
+            g.setColor(Palette.alpha(Palette.FG, 16));
+            for (int v = min; v <= max; v += step) {
+                int x = pad + (int) (trackW * (v - min) / (double) (max - min));
+                g.fillRect(x, trackY + 12, 1, 3);
+            }
+
+            int knob = 14;
             int kx = pad + filled - knob / 2;
-            g.setColor(new Color(0, 0, 0, 20));
-            g.fillOval(kx, trackY - 4, knob, knob);
-            g.setColor(Color.WHITE);
-            g.fillOval(kx, trackY - 6, knob, knob);
+            int ky = trackY - 2;
+            g.setColor(Palette.SHADOW);
+            g.fillRect(kx + 2, ky + 2, knob, knob);
+            g.setColor(Palette.FG);
+            g.fillRect(kx, ky, knob, knob);
             g.setColor(Palette.ACCENT);
-            g.setStroke(new BasicStroke(1.5f));
-            g.drawOval(kx, trackY - 6, knob, knob);
+            g.drawRect(kx, ky, knob, knob);
             g.dispose();
         }
     }
@@ -1007,7 +1089,7 @@ public final class Widgets {
         return text.substring(0, index) + ellipsis;
     }
 
-    /** Точка статуса сервера. */
+    /** Точка статуса сервера — квадратный пиксель. */
     public static class Dot extends JComponent {
         private Color color = Palette.DIM;
 
@@ -1025,13 +1107,13 @@ public final class Widgets {
         @Override
         protected void paintComponent(Graphics graphics) {
             Graphics2D g = Palette.quality(graphics);
-            int size = Math.min(9, Math.min(getWidth(), getHeight()));
+            int size = Math.min(8, Math.min(getWidth(), getHeight()));
             int x = (getWidth() - size) / 2;
             int y = (getHeight() - size) / 2;
-            g.setColor(Palette.alpha(color, 40));
-            g.fillOval(x - 3, y - 3, size + 6, size + 6);
+            g.setColor(Palette.alpha(color, 60));
+            g.drawRect(x - 2, y - 2, size + 3, size + 3);
             g.setColor(color);
-            g.fillOval(x, y, size, size);
+            g.fillRect(x, y, size, size);
             g.dispose();
         }
     }

@@ -1,7 +1,6 @@
 package ru.berrytrip.berryup;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import com.formdev.flatlaf.FlatLightLaf;
 import ru.berrytrip.berryup.ui.MainFrame;
 import ru.berrytrip.berryup.ui.Palette;
 
@@ -111,9 +110,7 @@ public final class Main {
         }
 
         Store.load();
-        boolean dark = Store.getBool("theme.dark", false);
-        Palette.applyTheme(dark);
-        setupLook(dark);
+        setupLook();
 
         final boolean[] allowed = {true};
         try {
@@ -187,26 +184,39 @@ public final class Main {
         return status.ok ? 0 : 4;
     }
 
-    /** Общая настройка FlatLaf и скруглений для светлой и тёмной темы. */
-    public static void setupLook(boolean dark) {
+    /** Общая настройка FlatLaf: только тёмная тема и прямые пиксельные углы. */
+    public static void setupLook() {
         System.setProperty("flatlaf.useNativeLibrary", "false");
         System.setProperty("flatlaf.useWindowDecorations", "false");
-        if (dark) FlatDarkLaf.setup(); else FlatLightLaf.setup();
-        UIManager.put("Component.arc", 10);
-        UIManager.put("Button.arc", 8);
-        UIManager.put("TextComponent.arc", 8);
+        FlatDarkLaf.setup();
+        UIManager.put("Component.arc", 0);
+        UIManager.put("Button.arc", 0);
+        UIManager.put("TextComponent.arc", 0);
+        UIManager.put("CheckBox.arc", 0);
         UIManager.put("Component.focusWidth", 0);
+        UIManager.put("Component.borderColor", Palette.LINE);
+        UIManager.put("Component.disabledBorderColor", Palette.LINE);
         UIManager.put("ScrollBar.showButtons", false);
-        UIManager.put("ScrollBar.width", 8);
-        UIManager.put("ScrollBar.thumbArc", 999);
-        UIManager.put("ScrollBar.thumbInsets", new java.awt.Insets(1, 1, 1, 1));
-        UIManager.put("ToolTip.background", dark ? new java.awt.Color(0x1E2229) : new java.awt.Color(0xFFFFFF));
-        UIManager.put("ToolTip.foreground", dark ? new java.awt.Color(0xF1F3F8) : new java.awt.Color(0x15171F));
-        UIManager.put("TextField.background", dark ? new java.awt.Color(0x262B34) : new java.awt.Color(0xF2F3F8));
-        UIManager.put("TextField.foreground", dark ? new java.awt.Color(0xF1F3F8) : new java.awt.Color(0x15171F));
-        UIManager.put("ComboBox.background", dark ? new java.awt.Color(0x262B34) : new java.awt.Color(0xFFFFFF));
-        UIManager.put("ComboBox.foreground", dark ? new java.awt.Color(0xF1F3F8) : new java.awt.Color(0x15171F));
-        UIManager.put("OptionPane.background", dark ? new java.awt.Color(0x1E2229) : new java.awt.Color(0xFFFFFF));
+        UIManager.put("ScrollBar.width", 10);
+        UIManager.put("ScrollBar.thumbArc", 0);
+        UIManager.put("ScrollBar.trackArc", 0);
+        UIManager.put("ScrollBar.thumbInsets", new java.awt.Insets(2, 2, 2, 2));
+        UIManager.put("ScrollBar.track", Palette.BG_SOFT);
+        UIManager.put("ScrollBar.thumb", Palette.LINE);
+        UIManager.put("ScrollBar.hoverThumbColor", Palette.MUTED);
+        UIManager.put("ToolTip.background", Palette.SURFACE_ALT);
+        UIManager.put("ToolTip.foreground", Palette.FG);
+        UIManager.put("ToolTip.border", javax.swing.BorderFactory.createLineBorder(Palette.LINE, 2));
+        UIManager.put("TextField.background", Palette.SURFACE_ALT);
+        UIManager.put("TextField.foreground", Palette.FG);
+        UIManager.put("TextField.border", javax.swing.BorderFactory.createLineBorder(Palette.LINE, 2));
+        UIManager.put("ComboBox.background", Palette.SURFACE_ALT);
+        UIManager.put("ComboBox.foreground", Palette.FG);
+        UIManager.put("ComboBox.selectionBackground", Palette.ACCENT_DEEP);
+        UIManager.put("ComboBox.selectionForeground", Palette.FG);
+        UIManager.put("OptionPane.background", Palette.SURFACE);
+        UIManager.put("OptionPane.messageForeground", Palette.FG);
+        UIManager.put("Panel.background", Palette.SURFACE);
     }
 
     /** Рисует вкладки в PNG, как --render у exe-версии: удобно проверить вёрстку. */
@@ -216,11 +226,7 @@ public final class Main {
         if (!dir.isDirectory() && !dir.mkdirs()) return 2;
         System.setProperty("berryup.render", "1");
         Store.load();
-        String theme = System.getProperty("berryup.render.theme", "");
-        boolean dark = "dark".equals(theme)
-                || (theme.isEmpty() && Store.getBool("theme.dark", false));
-        Palette.applyTheme(dark);
-        setupLook(dark);
+        setupLook();
 
         final MainFrame[] holder = new MainFrame[1];
         SwingUtilities.invokeAndWait(() -> {

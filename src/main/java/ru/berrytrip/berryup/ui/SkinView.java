@@ -275,8 +275,7 @@ public class SkinView extends JComponent {
 
         // Модель без сцены и фона: карточка лаунчера видна сквозь превью.
         java.awt.Shape oldClip = g.getClip();
-        g.clip(Palette.round(0, 0, width, height, 3));
-        boolean dark = Palette.isDark();
+        g.clip(Palette.round(0, 0, width, height, 0));
 
         float scale = (float) Math.min(width / 25.0, height / 39.0);
         int originX = width / 2;
@@ -363,17 +362,18 @@ public class SkinView extends JComponent {
         }
 
         if (dropActive) {
-            g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
-                    1f, new float[]{8f, 7f}, 0f));
+            g.setStroke(new BasicStroke(2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
+                    1f, new float[]{6f, 6f}, 0f));
             g.setColor(Palette.ACCENT);
-            g.drawRoundRect(6, 6, width - 13, height - 13, 16, 16);
+            g.drawRect(6, 6, width - 13, height - 13);
             g.setFont(Palette.semi(11.5f));
             String title = "Отпусти файл";
             java.awt.FontMetrics fm = g.getFontMetrics();
             int titleX = (width - fm.stringWidth(title)) / 2;
-            g.setColor(dark ? new Color(20, 23, 30, 220) : new Color(255, 255, 255, 230));
-            g.fillRoundRect(titleX - 10, height - 48, fm.stringWidth(title) + 20, 24, 12, 12);
+            g.setColor(new Color(20, 23, 30, 230));
+            g.fillRect(titleX - 10, height - 48, fm.stringWidth(title) + 20, 24);
             g.setColor(Palette.ACCENT);
+            g.drawRect(titleX - 10, height - 48, fm.stringWidth(title) + 20, 24);
             g.drawString(title, titleX, height - 32);
             g.setFont(Palette.reg(9f));
             g.setColor(Palette.MUTED);
