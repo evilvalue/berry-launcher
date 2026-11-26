@@ -77,20 +77,29 @@ public final class Configs {
         // Токен входа — не конфиг: после сброса игрок остаётся в аккаунте.
         byte[] token = readToken(minecraft);
 
-        stage(progress, "Убираю старые конфиги…", 0.2);
-        for (String dir : DIRS) delete(new File(minecraft, dir));
-        for (String file : FILES) delete(new File(minecraft, file));
-
         File zip = File.createTempFile("berryup-configs-", ".zip");
         try {
-            stage(progress, "Скачиваю исходные конфиги…", 0.3);
+            // Сначала качаем архив, и только потом трогаем текущие конфиги:
+            // при обрыве сети у игрока останутся его настройки.
+            stage(progress, "Скачиваю исходные конфиги…", 0.2);
             Http.download(Cfg.configsUrl(), zip, (received, total) -> {
                 double ratio = total > 0 ? received / (double) total : 0;
                 stage(progress, "Скачиваю исходные конфиги… " + Math.round(ratio * 100) + "%",
-                        0.3 + 0.45 * ratio);
+                        0.2 + 0.5 * ratio);
             });
-            stage(progress, "Распаковываю…", 0.8);
-            Sync.unzip(zip, minecraft);
+            stage(progress, "Убираю старые конфиги…", 0.75);
+            for (String dir : DIRS) delete(new File(minecraft, dir));
+            for (String file : FILES) delete(new File(minecraft, file));
+            try {
+                stage(progress, "Распаковываю…", 0.85);
+                Sync.unzip(zip, minecraft);
+            } catch (Exception broken) {
+                // Не оставляем игрока с полураспакованными конфигами.
+                for (String dir : DIRS) delete(new File(minecraft, dir));
+                for (String file : FILES) delete(new File(minecraft, file));
+                restoreFrom(backup, minecraft);
+                throw broken;
+            }
         } finally {
             if (!zip.delete()) zip.deleteOnExit();
         }
