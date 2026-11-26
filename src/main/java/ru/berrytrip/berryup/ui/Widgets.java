@@ -371,7 +371,7 @@ public final class Widgets {
                         border = Palette.LINE;
                         text = Palette.FG;
                     } else {
-                        fill = hover ? Palette.alpha(Color.WHITE, 120) : null;
+                        fill = hover ? Palette.HOVER : null;
                         text = hover ? Palette.FG : Palette.MUTED;
                     }
                     break;
@@ -566,6 +566,9 @@ public final class Widgets {
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setPreferredSize(new Dimension(260, hint == null || hint.isEmpty() ? 34 : 40));
             setMaximumSize(new Dimension(Integer.MAX_VALUE, hint == null || hint.isEmpty() ? 34 : 40));
+            // Минимум как у обычного вида: BoxLayout иначе сжимает тумблеры
+            // до нуля, и подписи наезжают друг на друга.
+            setMinimumSize(new Dimension(120, hint == null || hint.isEmpty() ? 34 : 40));
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
@@ -643,8 +646,9 @@ public final class Widgets {
             int tx = w - trackW - 2;
             int ty = hint == null || hint.isEmpty() ? (h - trackH) / 2 : 8;
 
-            Color track = selected ? Palette.ACCENT : (hover ? Palette.HOVER : Palette.SURFACE_ALT);
-            if (!isEnabled()) track = Palette.SURFACE_ALT;
+            Color track = selected ? Palette.ACCENT : (hover ? Palette.HOVER
+                    : Palette.mix(Palette.SURFACE_ALT, Palette.LINE, 0.6f));
+            if (!isEnabled()) track = Palette.mix(Palette.SURFACE_ALT, Palette.LINE, 0.6f);
             Palette.fillRound(g, tx, ty, trackW, trackH, 12, track);
             if (!selected) {
                 g.setStroke(new BasicStroke(1f));
@@ -972,7 +976,8 @@ public final class Widgets {
             int pad = 12;
             int trackY = h / 2 - 3;
             int trackW = Math.max(1, w - pad * 2);
-            Palette.fillRound(g, pad, trackY, trackW, 6, 3, Palette.SURFACE_ALT);
+            Palette.fillRound(g, pad, trackY, trackW, 6, 3,
+                    Palette.mix(Palette.SURFACE_ALT, Palette.LINE, 0.7f));
             int filled = (int) (trackW * (value - min) / (double) (max - min));
             Palette.fillRound(g, pad, trackY, Math.max(6, filled), 6, 3, Palette.ACCENT);
             int knob = 18;

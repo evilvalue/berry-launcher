@@ -272,6 +272,16 @@ public class SettingsPage extends JPanel {
         });
         behaviour.add(minimize);
 
+        Widgets.Toggle tray = new Widgets.Toggle("Свернуть в трей", null, Store.tray());
+        tray.setAlignmentX(LEFT_ALIGNMENT);
+        tray.setToolTipText("Кнопка «свернуть» и крестик будут убирать BerryUp в трей, игра продолжит работать.");
+        tray.onChange(value -> {
+            Store.setTray(value);
+            Store.save();
+            host.applyTray(value);
+        });
+        behaviour.add(tray);
+
         JPanel setupRow = new JPanel(new BorderLayout(8, 0));
         setupRow.setOpaque(false);
         setupRow.setAlignmentX(LEFT_ALIGNMENT);
@@ -305,7 +315,7 @@ public class SettingsPage extends JPanel {
         setupRow.add(scaleWrap, BorderLayout.EAST);
         behaviour.add(Widgets.vgap(4));
         behaviour.add(setupRow);
-        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 280));
+        behaviour.setMaximumSize(new Dimension(Integer.MAX_VALUE, 330));
         right.add(behaviour);
         right.add(Box.createVerticalGlue());
 
@@ -320,13 +330,19 @@ public class SettingsPage extends JPanel {
         Widgets.Card logCard = new Widgets.Card(new BorderLayout());
         logCard.pad(10, 14, 10, 14);
         logCard.setAlignmentX(LEFT_ALIGNMENT);
-        logCard.setPreferredSize(new Dimension(100, 180));
-        logCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
+        logCard.setPreferredSize(new Dimension(100, 190));
+        logCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 210));
 
-        JPanel logHead = new JPanel(new BorderLayout());
+        // Заголовок и кнопки в две строки: на узкой колонке они больше не наезжают
+        // друг на друга и не перекрывают слово «ЖУРНАЛ».
+        JPanel logHead = new JPanel();
         logHead.setOpaque(false);
-        logHead.add(Widgets.caption("ЖУРНАЛ", Palette.SURFACE), BorderLayout.WEST);
-        JPanel logButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        logHead.setLayout(new BoxLayout(logHead, BoxLayout.Y_AXIS));
+        JPanel logTitle = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        logTitle.setOpaque(false);
+        logTitle.add(Widgets.caption("ЖУРНАЛ", Palette.SURFACE));
+        logHead.add(logTitle);
+        JPanel logButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
         logButtons.setOpaque(false);
         Widgets.BerryButton copy = new Widgets.BerryButton("Копировать", Widgets.BerryButton.Kind.GHOST);
         copy.addActionListener(e -> {
@@ -352,14 +368,14 @@ public class SettingsPage extends JPanel {
         logButtons.add(copy);
         logButtons.add(open);
         logButtons.add(clear);
-        logHead.add(logButtons, BorderLayout.EAST);
+        logHead.add(logButtons);
         logCard.add(logHead, BorderLayout.NORTH);
 
         logArea.setEditable(false);
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
         logArea.setFont(Palette.mono(8.5f));
-        logArea.setForeground(Palette.MUTED);
+        logArea.setForeground(Palette.isDark() ? Palette.MUTED : Palette.FG);
         logArea.setBackground(Palette.SURFACE);
         logArea.setCaretColor(Palette.ACCENT);
         logArea.setBorder(BorderFactory.createEmptyBorder(8, 2, 2, 2));

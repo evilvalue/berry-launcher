@@ -119,6 +119,15 @@ public final class Store {
         setBool("minimize", value);
     }
 
+    /** Сворачивать окно в трей, а не в панель задач. */
+    public static boolean tray() {
+        return getBool("tray", false);
+    }
+
+    public static void setTray(boolean value) {
+        setBool("tray", value);
+    }
+
     public static int serverIndex() {
         int index = getInt("server", Cfg.SERVERS.length - 1);
         return Math.max(0, Math.min(Cfg.SERVERS.length - 1, index));

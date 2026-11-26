@@ -62,6 +62,10 @@ public class AccountPage extends JPanel {
 
     private Skins.Asset pickedSkin;
     private Skins.Asset pickedCape;
+    private String activeSkinName = "";
+    private String activeCapeName = "";
+    private String shownSkinHash = "";
+    private String shownCapeHash = "";
     private int lastState = -1;
 
     public AccountPage(MainFrame host) {
@@ -363,17 +367,35 @@ public class AccountPage extends JPanel {
         return component;
     }
 
-    /** Показывает последний скин и плащ из пула мода. */
+    /** Показывает именно тот скин и плащ, которые сейчас выбраны в игре. */
     private void loadExisting() {
         Skins.Asset skin = Skins.currentAsset(host.prism(), false);
         Skins.Asset cape = Skins.currentAsset(host.prism(), true);
         preview.setSkin(skin == null ? null : skin.image);
         preview.setCape(cape == null ? null : cape.image);
+        activeSkinName = skin == null ? "" : skin.file.getName();
+        activeCapeName = Skins.activeCapeLabel(host.prism());
+        shownSkinHash = safeHash(Skins.activeHash(host.prism(), false));
+        shownCapeHash = safeHash(Skins.activeHash(host.prism(), true));
+        pickedSkin = null;
+        pickedCape = null;
         model = Skins.model(host.prism());
         modelChoice.select(modelIndex(model), false);
         preview.setSlim(resolvedSlim());
         updateSkinLabels();
         updateCapeLabels();
+    }
+
+    /** Если скин поменяли в игре, превью подтягивает новый выбор из конфига мода. */
+    private void syncLook() {
+        String skinHash = safeHash(Skins.activeHash(host.prism(), false));
+        String capeHash = safeHash(Skins.activeHash(host.prism(), true));
+        if (skinHash.equals(shownSkinHash) && capeHash.equals(shownCapeHash)) return;
+        loadExisting();
+    }
+
+    private static String safeHash(String value) {
+        return value == null ? "" : value;
     }
 
     public void refresh() {
@@ -410,6 +432,7 @@ public class AccountPage extends JPanel {
             if (name.isEmpty() && host.prism() != null) name = host.prism().accountName();
             nickField.setText(name);
         }
+        syncLook();
         revalidate();
         repaint();
     }
@@ -646,8 +669,9 @@ public class AccountPage extends JPanel {
 
     private void updateSkinLabels() {
         if (pickedSkin == null) {
-            skinFile.setText("Не выбран");
-            skinFile.setToolTipText(null);
+            skinFile.setText(activeSkinName.isEmpty() ? "Не выбран" : activeSkinName);
+            skinFile.setToolTipText(activeSkinName.isEmpty()
+                    ? null : "Скин выбран в игре · QuickSkin");
             applySkin.setEnabled(false);
         } else {
             skinFile.setText(pickedSkin.file.getName());
@@ -658,8 +682,9 @@ public class AccountPage extends JPanel {
 
     private void updateCapeLabels() {
         if (pickedCape == null) {
-            capeFile.setText("Не выбран");
-            capeFile.setToolTipText(null);
+            capeFile.setText(activeCapeName.isEmpty() ? "Не выбран" : activeCapeName);
+            capeFile.setToolTipText(activeCapeName.isEmpty()
+                    ? null : "Плащ выбран в меню QuickSkin");
             applyCape.setEnabled(false);
         } else {
             capeFile.setText(pickedCape.file.getName());
@@ -696,6 +721,7 @@ public class AccountPage extends JPanel {
                 skinStatus.setText(success ? "" : text);
                 skinStatus.setForeground(success ? Palette.OK : Palette.ERR);
                 skinStatus.setVisible(!success);
+                if (success) loadExisting();
                 host.setState(text, success ? Palette.OK : Palette.ERR);
             });
         }, "berry-skin").start();

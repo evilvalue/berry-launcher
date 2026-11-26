@@ -1,31 +1,40 @@
 package ru.berrytrip.berryup;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * Скины и плащи QuickSkin.
  *
- * <p>Мод держит собственный пул файлов: {@code quickskin/uploads/skins} и
- * {@code quickskin/uploads/capes}. Лаунчер кладёт выбранный файл именно туда,
- * поэтому он сразу появляется в меню QuickSkin. Форматы проверяются по тем же
- * правилам, что и в моде:</p>
+ * <p>QuickSkin 5 хранит библиотеку в {@code %APPDATA%\QuickSkin}: выбранный скин
+ * лежит в {@code skins}, плащи — в {@code capes}, а какой именно выбран — написано
+ * в {@code config/quickskin-client.json} как активный ContentId (sha256 файла).
+ * Лаунчер читает именно эти хэши, поэтому в превью показывается тот скин и тот
+ * плащ, которые сейчас стоят в игре, а не последний файл в папке.</p>
  *
- * <ul>
- *   <li>файлы PNG или GIF, не больше 32 МБ;</li>
- *   <li>скины — 64×32 (старый формат) или квадрат 64…2048;</li>
- *   <li>плащи — 64×32 … 2048×1024 (2:1 на кадр, допускаются анимированные полосы).</li>
- * </ul>
+ * <p>Старые версии мода держали файлы внутри инстанса
+ * ({@code quickskin/uploads/skins|capes}). Такой пул тоже читается, а установка
+ * идёт в библиотеку, если она есть, иначе — в старый пул.</p>
+ *
+ * <p>Встроенные плащи ({@code known:old}, {@code known:twisted} и остальные)
+ * не лежат на диске: они внутри jar мода, откуда лаунчер их и достаёт.</p>
  */
 public final class Skins {
 
@@ -34,6 +43,7 @@ public final class Skins {
     public static final int MIN_SIZE = 64;
     public static final int MAX_SIZE = 2048;
 
+    private static final String NONE_CAPE = "known:__NONE__";
     private static final byte[] CAPE_DOMAIN = "quickskin:cape\0".getBytes(StandardCharsets.UTF_8);
 
     private Skins() {
@@ -62,15 +72,56 @@ public final class Skins {
         }
     }
 
+    // ------------------------------------------------------------- пути
+
+    /** Библиотека QuickSkin 5+: %APPDATA%\QuickSkin. */
+    public static File libraryDir() {
+        return new File(Cfg.ROAMING, "QuickSkin");
+    }
+
+    public static File librarySkins() {
+        return new File(libraryDir(), "skins");
+    }
+
+    public static File libraryCapes() {
+        return new File(libraryDir(), "capes");
+    }
+
+    /** Старый пул мода внутри инстанса. */
     public static File skinDir(Prism prism) {
-        return new File(prism.minecraftDir(), "quickskin/uploads/skins");
+        return prism == null ? null : new File(prism.minecraftDir(), "quickskin/uploads/skins");
     }
 
     public static File capeDir(Prism prism) {
-        return new File(prism.minecraftDir(), "quickskin/uploads/capes");
+        return prism == null ? null : new File(prism.minecraftDir(), "quickskin/uploads/capes");
     }
 
-    /** Последний скин из пула QuickSkin — для 3D-превью при старте. */
+    private static File clientConfig(Prism prism) {
+        return prism == null ? null : new File(prism.minecraftDir(), "config/quickskin-client.json");
+    }
+
+    private static File preferencesFile() {
+        return new File(libraryDir(), "skin-preferences.json");
+    }
+
+    // ------------------------------------------------------------- активный вид
+
+    /** Активный ContentId из quickskin-client.json: sha256-… или known:…. */
+    public static String activeHash(Prism prism, boolean cape) {
+        File config = clientConfig(prism);
+        if (config == null || !config.isFile()) return null;
+        try {
+            JsonObject json = JsonParser.parseString(Sys.read(config)).getAsJsonObject();
+            String key = cape ? "activeCapeHash" : "activeSkinHash";
+            if (!json.has(key) || json.get(key).isJsonNull()) return null;
+            String value = json.get(key).getAsString().trim();
+            return value.isEmpty() ? null : value;
+        } catch (Exception error) {
+            return null;
+        }
+    }
+
+    /** Последний скин из пула QuickSkin — запасной вариант, если хэш не нашёлся. */
     public static BufferedImage current(Prism prism) {
         Asset asset = currentAsset(prism, false);
         return asset == null ? null : asset.image;
@@ -83,7 +134,7 @@ public final class Skins {
 
     /** activeModelType из QuickSkin: auto, classic или slim. */
     public static String model(Prism prism) {
-        File config = prism == null ? null : new File(prism.minecraftDir(), "config/quickskin-client.json");
+        File config = clientConfig(prism);
         if (config == null || !config.isFile()) return "auto";
         try {
             JsonObject json = JsonParser.parseString(Sys.read(config)).getAsJsonObject();
@@ -97,6 +148,7 @@ public final class Skins {
     public static void setModel(Prism prism, String value) {
         String model = normalizeModel(value);
         updateConfig(prism, json -> json.addProperty("activeModelType", model));
+        updatePreference(activeHash(prism, false), model, null);
     }
 
     public static String normalizeModel(String value) {
@@ -104,14 +156,77 @@ public final class Skins {
         return model.equals("classic") || model.equals("slim") ? model : "auto";
     }
 
+    /**
+     * Скин или плащ, который сейчас выбран в игре. Сначала ищем файл по активному
+     * ContentId, встроенный плащ берём из jar мода, и только если ничего не нашли —
+     * показываем самый свежий файл из пула.
+     */
     public static Asset currentAsset(Prism prism, boolean cape) {
         if (prism == null || !prism.hasInstance()) return null;
-        File[] files = (cape ? capeDir(prism) : skinDir(prism)).listFiles();
+        String hash = activeHash(prism, cape);
+        if (hash == null) return newest(prism, cape);
+        if (hash.startsWith("sha256-")) return findByHash(prism, hash, cape);
+        if (cape && hash.startsWith("known:")) {
+            return builtinCape(prism, hash.substring("known:".length()));
+        }
+        return null;
+    }
+
+    /** Подпись активного плаща для интерфейса: old, twisted… или пусто. */
+    public static String activeCapeLabel(Prism prism) {
+        String hash = activeHash(prism, true);
+        if (hash == null || hash.equals(NONE_CAPE)) return "";
+        if (hash.startsWith("known:")) {
+            String id = hash.substring("known:".length());
+            return NONE_CAPE.equals(hash) || id.isEmpty() ? "" : id;
+        }
+        return "свой файл";
+    }
+
+    // ------------------------------------------------------------- поиск по хэшу
+
+    private static Asset findByHash(Prism prism, String hash, boolean cape) {
+        String wanted = hash.substring("sha256-".length()).trim().toLowerCase(Locale.ROOT);
+        if (wanted.isEmpty()) return null;
+        for (File dir : searchDirs(prism, cape)) {
+            Asset found = findByHash(dir, wanted, cape);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private static Asset findByHash(File dir, String wanted, boolean cape) {
+        if (dir == null || !dir.isDirectory()) return null;
+        File[] files = dir.listFiles();
         if (files == null) return null;
-        File newest = null;
         for (File file : files) {
             if (!file.isFile() || !isImage(file)) continue;
-            if (newest == null || file.lastModified() > newest.lastModified()) newest = file;
+            try {
+                if (!contentId(file, cape).equals(wanted)) continue;
+                return read(file, cape);
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    private static List<File> searchDirs(Prism prism, boolean cape) {
+        List<File> dirs = new ArrayList<File>(4);
+        dirs.add(cape ? libraryCapes() : librarySkins());
+        dirs.add(cape ? capeDir(prism) : skinDir(prism));
+        return dirs;
+    }
+
+    private static Asset newest(Prism prism, boolean cape) {
+        List<File> dirs = searchDirs(prism, cape);
+        File newest = null;
+        for (File dir : dirs) {
+            File[] files = dir == null ? null : dir.listFiles();
+            if (files == null) continue;
+            for (File file : files) {
+                if (!file.isFile() || !isImage(file)) continue;
+                if (newest == null || file.lastModified() > newest.lastModified()) newest = file;
+            }
         }
         if (newest == null) return null;
         try {
@@ -120,6 +235,47 @@ public final class Skins {
             return null;
         }
     }
+
+    /** Встроенный плащ из assets/quickskin/textures/capes/<id>.png внутри jar мода. */
+    private static Asset builtinCape(Prism prism, String id) {
+        if (id == null || id.isEmpty() || "__NONE__".equals(id)) return null;
+        if (!id.matches("[a-z0-9_]+")) return null;
+        File jar = quickskinJar(prism);
+        if (jar == null) return null;
+        try (ZipFile zip = new ZipFile(jar)) {
+            ZipEntry entry = zip.getEntry("assets/quickskin/textures/capes/" + id + ".png");
+            if (entry == null) return null;
+            BufferedImage image;
+            try (InputStream stream = zip.getInputStream(entry)) {
+                image = ImageIO.read(stream);
+            }
+            if (image == null) return null;
+            return new Asset(jar, image, image.getWidth(), image.getHeight(), false, true);
+        } catch (Exception error) {
+            Log.error("QuickSkin: встроенный плащ " + id + " не прочитан — " + error.getMessage());
+            return null;
+        }
+    }
+
+    private static File quickskinJar(Prism prism) {
+        List<File> dirs = new ArrayList<File>(2);
+        dirs.add(prism.modsDir());
+        File off = Tweaks.offDir(prism);
+        if (off != null) dirs.add(off);
+        for (File dir : dirs) {
+            File[] files = dir == null ? null : dir.listFiles();
+            if (files == null) continue;
+            for (File file : files) {
+                if (!file.isFile()) continue;
+                String name = file.getName().toLowerCase(Locale.ROOT);
+                if (!name.endsWith(".jar")) continue;
+                if (name.contains("quick") && name.contains("skin")) return file;
+            }
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------- проверка файлов
 
     /** Читает и проверяет скин, не копируя его в пул. */
     public static Asset readSkin(File file) throws Exception {
@@ -167,44 +323,69 @@ public final class Skins {
         return value > 0 && (value & (value - 1)) == 0;
     }
 
+    // ------------------------------------------------------------- установка
+
     /**
-     * Кладёт скин в пул QuickSkin и прописывает его в конфиг мода.
+     * Кладёт скин в библиотеку QuickSkin и делает его активным в игре.
      * Возвращает имя файла в папке скинов.
      */
     public static String applySkin(Prism prism, File source, String nick, String model) throws Exception {
         Asset asset = readSkin(source);
         File target = copy(prism, asset, false);
-        String hash = "sha256-" + contentId(bytes(target), false);
-        updateSkinConfig(prism, hash, nick, normalizeModel(model));
+        String hash = "sha256-" + contentId(target, false);
+        String normalized = normalizeModel(model);
+        updateSkinConfig(prism, hash, nick, normalized);
+        updatePreference(hash, normalized, null);
         return target.getName();
     }
 
     /**
-     * Кладёт плащ в пул QuickSkin и включает его в конфиге.
+     * Кладёт плащ в библиотеку QuickSkin и включает его в конфиге.
      * Возвращает имя файла в папке плащей.
      */
     public static String applyCape(Prism prism, File source) throws Exception {
         Asset asset = readCape(source);
         File target = copy(prism, asset, true);
-        String hash = "sha256-" + contentId(bytes(target), true);
+        String hash = "sha256-" + contentId(target, true);
         updateCapeConfig(prism, hash);
+        updatePreference(activeHash(prism, false), null, hash);
         return target.getName();
     }
 
     /** Убирает активный плащ так же, как это делает меню QuickSkin. */
     public static void clearCape(Prism prism) {
-        updateCapeConfig(prism, "known:__NONE__");
+        updateCapeConfig(prism, NONE_CAPE);
+        updatePreference(activeHash(prism, false), null, NONE_CAPE);
     }
 
     private static File copy(Prism prism, Asset asset, boolean cape) throws Exception {
         if (prism == null || !prism.hasInstance()) throw new Exception("сборка ещё не установлена");
-        File dir = cape ? capeDir(prism) : skinDir(prism);
+        // QuickSkin 5+ читает общую библиотеку в %APPDATA%\QuickSkin.
+        // Если её ещё нет (старая версия мода), кладём файл в пул инстанса.
+        File dir = libraryDir().isDirectory()
+                ? (cape ? libraryCapes() : librarySkins())
+                : (cape ? capeDir(prism) : skinDir(prism));
+        if (dir == null) throw new Exception("не удалось найти папку QuickSkin");
         if (!dir.isDirectory() && !dir.mkdirs()) {
             throw new Exception("не удалось создать " + dir.getAbsolutePath());
         }
         File target = new File(dir, fileName(asset.file.getName(), cape));
+        if (target.isFile() && !contentId(target, cape).equals(contentId(asset.file, cape))) {
+            // Файл с тем же именем, но другим содержимым не должен затирать чужой скин.
+            target = new File(dir, uniqueName(fileName(asset.file.getName(), cape), dir));
+        }
         Files.copy(asset.file.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
         return target;
+    }
+
+    private static String uniqueName(String name, File dir) {
+        String base = name.endsWith(".gif") ? name.substring(0, name.length() - 4) : name.substring(0, name.length() - 4);
+        String ext = name.substring(name.length() - 4);
+        for (int i = 2; i < 1000; i++) {
+            File candidate = new File(dir, base + "-" + i + ext);
+            if (!candidate.exists()) return candidate.getName();
+        }
+        return name;
     }
 
     private static void updateSkinConfig(Prism prism, String hash, String nick, String model) {
@@ -238,14 +419,18 @@ public final class Skins {
     }
 
     private static void updateConfig(Prism prism, ConfigEdit edit) {
-        if (prism == null) return;
-        File config = new File(prism.minecraftDir(), "config/quickskin-client.json");
-        if (!config.isFile()) return;
+        File config = clientConfig(prism);
+        if (config == null) return;
         try {
-            JsonObject json = JsonParser.parseString(Sys.read(config)).getAsJsonObject();
-            Files.copy(config.toPath(),
-                    new File(config.getParentFile(), "quickskin-client.json.bak").toPath(),
-                    StandardCopyOption.REPLACE_EXISTING);
+            JsonObject json = config.isFile()
+                    ? JsonParser.parseString(Sys.read(config)).getAsJsonObject() : new JsonObject();
+            if (config.isFile()) {
+                Files.copy(config.toPath(),
+                        new File(config.getParentFile(), "quickskin-client.json.bak").toPath(),
+                        StandardCopyOption.REPLACE_EXISTING);
+            } else if (!config.getParentFile().isDirectory() && !config.getParentFile().mkdirs()) {
+                return;
+            }
             edit.apply(json);
             Files.write(config.toPath(), json.toString().getBytes(StandardCharsets.UTF_8));
         } catch (Exception error) {
@@ -253,13 +438,45 @@ public final class Skins {
         }
     }
 
+    /**
+     * skin-preferences.json помнит модель и плащ для каждого скина.
+     * Без этой записи меню мода может вернуть старому скину старый плащ.
+     */
+    private static void updatePreference(String hash, String model, String cape) {
+        if (hash == null || !hash.startsWith("sha256-")) return;
+        File file = preferencesFile();
+        try {
+            JsonObject root = new JsonObject();
+            if (file.isFile()) {
+                try {
+                    root = JsonParser.parseString(Sys.read(file)).getAsJsonObject();
+                } catch (Exception ignored) {
+                }
+            }
+            JsonObject preferences = root.has("preferences")
+                    ? root.getAsJsonObject("preferences") : new JsonObject();
+            JsonObject entry = preferences.has(hash)
+                    ? preferences.getAsJsonObject(hash) : new JsonObject();
+            if (model != null && !model.isEmpty()) {
+                entry.addProperty("modelType", "slim".equals(model) ? "slim" : "classic");
+            }
+            if (!entry.has("favorite")) entry.addProperty("favorite", false);
+            if (cape != null) entry.addProperty("cape", cape);
+            preferences.add(hash, entry);
+            root.add("preferences", preferences);
+            if (!libraryDir().isDirectory() && !libraryDir().mkdirs()) return;
+            String text = new GsonBuilder().setPrettyPrinting().create().toJson(root);
+            Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception error) {
+            Log.error("QuickSkin: skin-preferences.json не обновлён — " + error.getMessage());
+        }
+    }
+
+    // ------------------------------------------------------------- мелочи
+
     private static boolean isImage(File file) {
         String name = file.getName().toLowerCase(Locale.ROOT);
         return name.endsWith(".png") || name.endsWith(".gif");
-    }
-
-    private static byte[] bytes(File file) throws Exception {
-        return Files.readAllBytes(file.toPath());
     }
 
     private static String fileName(String original, boolean cape) {
@@ -271,12 +488,20 @@ public final class Skins {
     }
 
     /** ContentId мода: sha256 файла, для плащей — с доменом quickskin:cape. */
-    private static String contentId(byte[] data, boolean cape) throws Exception {
+    private static String contentId(File file, boolean cape) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         if (cape) digest.update(CAPE_DOMAIN);
-        byte[] hash = digest.digest(data);
-        StringBuilder text = new StringBuilder(hash.length * 2);
-        for (byte value : hash) text.append(String.format("%02x", value));
+        try (InputStream input = new FileInputStream(file)) {
+            byte[] buffer = new byte[65536];
+            int read;
+            while ((read = input.read(buffer)) > 0) digest.update(buffer, 0, read);
+        }
+        return hex(digest.digest());
+    }
+
+    private static String hex(byte[] bytes) {
+        StringBuilder text = new StringBuilder(bytes.length * 2);
+        for (byte value : bytes) text.append(String.format("%02x", value));
         return text.toString();
     }
 }

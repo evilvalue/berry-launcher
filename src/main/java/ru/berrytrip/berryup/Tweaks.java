@@ -351,6 +351,7 @@ public final class Tweaks {
         int memory = effectiveMemory();
         setMemory(memory);
         applyMemory(prism, memory);
+        DistantHorizons.apply(prism);
         save();
         Log.ok("Настройки применены к сборке: память " + memory + " ГБ, ресурспаки "
                 + (getBool("packs", true) ? "вкл" : "выкл") + ", шейдеры "

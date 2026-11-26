@@ -2,6 +2,7 @@ package ru.berrytrip.berryup.ui;
 
 import ru.berrytrip.berryup.Auth;
 import ru.berrytrip.berryup.Cfg;
+import ru.berrytrip.berryup.DistantHorizons;
 import ru.berrytrip.berryup.Install;
 import ru.berrytrip.berryup.Log;
 import ru.berrytrip.berryup.Ping;
@@ -16,6 +17,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -34,8 +36,16 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.MenuItem;
+import java.awt.Point;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -43,7 +53,9 @@ import java.io.File;
 /** Главное окно BerryUp: слева запуск и сервер, справа вкладки. */
 public class MainFrame extends JFrame {
 
-    private static final double ASPECT = 3.0 / 2.0;
+    /** Единственный размер окна: вёрстка рассчитана ровно на него. */
+    private static final int WINDOW_WIDTH = 1200;
+    private static final int WINDOW_HEIGHT = 800;
 
     private static final String[] PAGE_NAMES = {"home", "account", "settings", "diag", "about"};
     private static final String[] PAGE_TITLES = {"Главное", "Аккаунт", "Настройки", "Диагностика", "О программе"};
@@ -80,31 +92,18 @@ public class MainFrame extends JFrame {
     private final Banner banner;
     private boolean pingRunning;
     private boolean modsSyncing;
+    private TrayIcon trayIcon;
 
     public MainFrame() {
         super("BerryUp " + Cfg.VERSION);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        setUndecorated(true);
+        setResizable(false);
         Store.load();
         Tweaks.load();
-        // Стартовый размер — 3:2; дальше окно можно свободно менять без прокрутки страниц.
-        java.awt.Rectangle usable = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
-                .getMaximumWindowBounds();
-        int maxWidth = Math.max(960, usable.width - 60);
-        int maxHeight = Math.max(640, usable.height - 60);
-        int baseWidth = Math.min(1280, maxWidth);
-        int baseHeight = (int) Math.round(baseWidth / ASPECT);
-        if (baseHeight > maxHeight) {
-            baseHeight = maxHeight;
-            baseWidth = (int) Math.round(baseHeight * ASPECT);
-        }
-        setMinimumSize(new Dimension(baseWidth, baseHeight));
-        int width = Math.max(baseWidth, Math.min(Store.getInt("width", baseWidth), maxWidth));
-        int height = (int) Math.round(width / ASPECT);
-        if (height > maxHeight) {
-            height = maxHeight;
-            width = (int) Math.round(height * ASPECT);
-        }
-        setSize(width, height);
+        Dimension fixed = fixedSize();
+        setSize(fixed);
+        setMinimumSize(fixed);
         setLocationRelativeTo(null);
         try {
             java.awt.Image icon = javax.imageio.ImageIO.read(MainFrame.class.getResourceAsStream("/berry.png"));
@@ -112,14 +111,20 @@ public class MainFrame extends JFrame {
         } catch (Exception ignored) {
         }
         prism = Prism.find();
+        DistantHorizons.apply(prism);
         // «Запомнить меня» выключено — прошлый токен не переиспользуем
         if (prism != null && prism.hasInstance() && !Store.remember()) {
             Auth.logout(prism);
         }
 
         Widgets.Backdrop root = new Widgets.Backdrop(new BorderLayout(0, 0));
-        root.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
-        setContentPane(root);
+        root.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
+        JPanel shell = new JPanel(new BorderLayout());
+        shell.setBackground(Palette.SURFACE);
+        shell.setBorder(BorderFactory.createLineBorder(Palette.LINE, 1));
+        shell.add(titleBar(), BorderLayout.NORTH);
+        shell.add(root, BorderLayout.CENTER);
+        setContentPane(shell);
 
         // ---------------------------------------------------------- боковая панель
         JPanel side = new JPanel();
@@ -211,29 +216,17 @@ public class MainFrame extends JFrame {
         statusRow.setAlignmentX(LEFT_ALIGNMENT);
         statusRow.add(serverDot);
         serverStatus = Widgets.label("проверяю…", Palette.reg(8.5f), Palette.MUTED);
-        serverStatus.setToolTipText("TCP-задержка до сервера, как в игре. MOTD и ответ status в цифру не входят.");
+        serverStatus.setToolTipText("Состояние общего сервера. Москва и Anycast — прокси к тому же серверу.");
         statusRow.add(serverStatus);
         serverCard.add(statusRow);
         serverCard.add(Box.createVerticalStrut(6));
 
-        serverMotd = Widgets.paragraph(selectedServer().endpoint(),
+        serverMotd = Widgets.paragraph("",
                 Palette.reg(8.5f), Palette.DIM);
         serverMotd.setAlignmentX(LEFT_ALIGNMENT);
         serverMotd.setRows(3);
         serverCard.add(serverMotd);
         serverCard.add(Box.createVerticalGlue());
-
-        Widgets.BerryButton copy = new Widgets.BerryButton("Скопировать адрес", Widgets.BerryButton.Kind.GHOST);
-        copy.setAlignmentX(LEFT_ALIGNMENT);
-        copy.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
-        copy.addActionListener(e -> {
-            Cfg.Server server = selectedServer();
-            if (server != null && ru.berrytrip.berryup.Sys.copy(server.endpoint())) {
-                Log.ok("Адрес скопирован: " + server.endpoint());
-                setState("Адрес скопирован", Palette.OK);
-            }
-        });
-        serverCard.add(copy);
 
         side.add(serverCard);
         side.add(Box.createVerticalStrut(12));
@@ -364,12 +357,11 @@ public class MainFrame extends JFrame {
 
             @Override
             public void windowClosing(WindowEvent e) {
-                Store.set("width", String.valueOf(getWidth()));
-                Store.set("height", String.valueOf(getHeight()));
-                Store.save();
+                closeWindow();
             }
         });
 
+        if (Store.tray()) applyTray(true);
         showPage(0);
     }
 
@@ -464,8 +456,6 @@ public class MainFrame extends JFrame {
     /** Переключение светлой/тёмной темы: пересобираем окно с новыми цветами. */
     public void applyTheme(boolean dark) {
         Store.setBool("theme.dark", dark);
-        Store.set("width", String.valueOf(getWidth()));
-        Store.set("height", String.valueOf(getHeight()));
         Store.save();
         Palette.applyTheme(dark);
         ru.berrytrip.berryup.Main.setupLook(dark);
@@ -520,7 +510,9 @@ public class MainFrame extends JFrame {
         try {
             Sync.launch(prism, connect, serverBox.getSelectedIndex());
             setState(connect ? "Запускаю и подключаю" : "Игра запускается", Palette.OK);
-            if (Store.minimizeOnPlay()) setState(JFrame.ICONIFIED);
+            if (Store.minimizeOnPlay()) {
+                if (Store.tray()) hideToTray(); else setState(JFrame.ICONIFIED);
+            }
         } catch (Exception error) {
             Log.error("Не удалось запустить игру: " + error.getMessage());
             setState("Игра не запустилась", Palette.ERR);
@@ -745,30 +737,250 @@ public class MainFrame extends JFrame {
         }, "berry-update-check").start();
     }
 
+    /**
+     * Москва и Anycast — прокси к тому же серверу, что и «Прямое подключение».
+     * Поэтому проверяем один прямой адрес, а результат показываем для любого
+     * выбранного входа: если прямой офлайн, прокси тоже считаются офлайн.
+     */
     public void pingServer() {
         if (pingRunning) return;
         pingRunning = true;
-        Cfg.Server server = selectedServer();
+        final Cfg.Server direct = Cfg.SERVERS[Cfg.SERVERS.length - 1];
         serverDot.setColor(Palette.DIM);
         serverStatus.setText("проверяю…");
         serverStatus.setForeground(Palette.MUTED);
         new Thread(() -> {
-            Ping.Status status = Ping.query(server.host, server.port, 5000);
+            Ping.Status status = Ping.query(direct.host, direct.port, 5000);
             SwingUtilities.invokeLater(() -> {
                 pingRunning = false;
-                serverDot.setColor(status.ok ? Palette.OK : Palette.ERR);
                 if (status.ok) {
+                    serverDot.setColor(Palette.OK);
                     serverStatus.setText("онлайн · " + status.players() + " · " + status.ping + " мс");
                     serverStatus.setForeground(Palette.MUTED);
-                    String motd = status.motd.isEmpty() ? server.endpoint() : status.motd;
-                    serverMotd.setText(motd + "\n" + server.endpoint());
+                    serverMotd.setText(status.motd.isEmpty() ? "Сервер доступен" : status.motd);
                 } else {
-                    serverStatus.setText("офлайн · " + status.error);
+                    serverDot.setColor(Palette.ERR);
+                    serverStatus.setText("офлайн");
                     serverStatus.setForeground(Palette.MUTED);
-                    serverMotd.setText("Сервер " + server.endpoint() + "\n" + status.error);
+                    serverMotd.setText("Сервер недоступен. Москва и Anycast — прокси к нему, поэтому тоже офлайн.");
                 }
             });
         }, "berry-ping").start();
+    }
+
+    // ------------------------------------------------------------ окно и трей
+
+    /** Один размер окна; на маленьком экране он аккуратно уменьшается. */
+    private static Dimension fixedSize() {
+        java.awt.Rectangle usable = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getMaximumWindowBounds();
+        int width = Math.min(WINDOW_WIDTH, Math.max(900, usable.width - 24));
+        int height = Math.min(WINDOW_HEIGHT, Math.max(600, usable.height - 24));
+        return new Dimension(width, height);
+    }
+
+    /** Кастомная рамка вместо системной: заголовок, перетаскивание, свернуть и закрыть. */
+    private JPanel titleBar() {
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setBackground(Palette.SURFACE);
+        bar.setPreferredSize(new Dimension(10, 40));
+        bar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Palette.LINE),
+                BorderFactory.createEmptyBorder(0, 12, 0, 6)));
+
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 9, 9));
+        left.setOpaque(false);
+        left.add(new Widgets.Logo(22));
+        left.add(Widgets.label("BerryUp", Palette.semi(10.5f), Palette.FG));
+        left.add(Widgets.label(Cfg.VERSION, Palette.reg(8.5f), Palette.DIM));
+        bar.add(left, BorderLayout.WEST);
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 5));
+        buttons.setOpaque(false);
+        WindowButton minimize = new WindowButton(false);
+        minimize.setToolTipText(Store.tray() ? "Свернуть в трей" : "Свернуть");
+        minimize.addActionListener(e -> minimizeWindow());
+        WindowButton close = new WindowButton(true);
+        close.setToolTipText(Store.tray() ? "Убрать в трей" : "Закрыть");
+        close.addActionListener(e -> closeWindow());
+        buttons.add(minimize);
+        buttons.add(close);
+        bar.add(buttons, BorderLayout.EAST);
+
+        installDrag(bar);
+        installDrag(left);
+        return bar;
+    }
+
+    /** Тянем окно за заголовок: системной рамки у него больше нет. */
+    private void installDrag(Component component) {
+        MouseAdapter drag = new MouseAdapter() {
+            private Point pressed;
+
+            @Override
+            public void mousePressed(MouseEvent event) {
+                pressed = event.getPoint();
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent event) {
+                if (pressed == null) return;
+                Point origin = getLocation();
+                setLocation(origin.x + event.getX() - pressed.x,
+                        origin.y + event.getY() - pressed.y);
+            }
+        };
+        component.addMouseListener(drag);
+        component.addMouseMotionListener(drag);
+    }
+
+    public void applyTray(boolean enabled) {
+        if (!enabled) {
+            removeTray();
+            return;
+        }
+        if (!SystemTray.isSupported()) {
+            Log.error("Системный трей не поддерживается — окно останется в панели задач.");
+            return;
+        }
+        if (trayIcon != null) return;
+        try {
+            PopupMenu menu = new PopupMenu();
+            MenuItem open = new MenuItem("Открыть BerryUp");
+            open.addActionListener(e -> restoreFromTray());
+            MenuItem exit = new MenuItem("Выход");
+            exit.addActionListener(e -> exitApp());
+            menu.add(open);
+            menu.addSeparator();
+            menu.add(exit);
+            trayIcon = new TrayIcon(trayImage(), "BerryUp " + Cfg.VERSION, menu);
+            trayIcon.setImageAutoSize(true);
+            trayIcon.addActionListener(e -> restoreFromTray());
+            SystemTray.getSystemTray().add(trayIcon);
+            Log.info("BerryUp будет сворачиваться в трей.");
+        } catch (Exception error) {
+            trayIcon = null;
+            Log.error("Трей не включился: " + error.getMessage());
+        }
+    }
+
+    private Image trayImage() {
+        try {
+            Image icon = javax.imageio.ImageIO.read(MainFrame.class.getResourceAsStream("/berry.png"));
+            if (icon != null) return icon;
+        } catch (Exception ignored) {
+        }
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(16, 16,
+                java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+        g.setColor(Palette.ACCENT);
+        g.fillRoundRect(0, 0, 16, 16, 5, 5);
+        g.dispose();
+        return image;
+    }
+
+    private void removeTray() {
+        if (trayIcon == null) return;
+        try {
+            SystemTray.getSystemTray().remove(trayIcon);
+        } catch (Exception ignored) {
+        }
+        trayIcon = null;
+        Log.info("Сворачивание в трей выключено.");
+    }
+
+    private void minimizeWindow() {
+        if (Store.tray()) hideToTray(); else setState(JFrame.ICONIFIED);
+    }
+
+    private void closeWindow() {
+        if (Store.tray()) hideToTray(); else exitApp();
+    }
+
+    private void hideToTray() {
+        if (!SystemTray.isSupported()) {
+            setState(JFrame.ICONIFIED);
+            return;
+        }
+        applyTray(true);
+        if (trayIcon == null) {
+            setState(JFrame.ICONIFIED);
+            return;
+        }
+        setVisible(false);
+        Log.info("BerryUp свёрнут в трей.");
+    }
+
+    private void restoreFromTray() {
+        setVisible(true);
+        setExtendedState(JFrame.NORMAL);
+        toFront();
+        requestFocus();
+    }
+
+    public void exitApp() {
+        Store.save();
+        dispose();
+        System.exit(0);
+    }
+
+    @Override
+    public void dispose() {
+        removeTray();
+        super.dispose();
+    }
+
+    /** Кнопки «свернуть» и «закрыть» в кастомной рамке. */
+    private static final class WindowButton extends JButton {
+        private final boolean close;
+        private boolean hover;
+
+        WindowButton(boolean close) {
+            this.close = close;
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
+            setRolloverEnabled(true);
+            setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+            setPreferredSize(new Dimension(40, 30));
+            setMaximumSize(new Dimension(40, 30));
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent event) {
+                    hover = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent event) {
+                    hover = false;
+                    repaint();
+                }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g = Palette.quality(graphics);
+            int w = getWidth();
+            int h = getHeight();
+            if (hover) {
+                Palette.fillRound(g, 2, 2, w - 4, h - 4, 3,
+                        close ? Palette.alpha(Palette.ERR, 34) : Palette.SURFACE_ALT);
+            }
+            g.setColor(hover ? (close ? Palette.ERR : Palette.FG) : Palette.MUTED);
+            g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            int cx = w / 2;
+            int cy = h / 2;
+            if (close) {
+                g.drawLine(cx - 5, cy - 5, cx + 5, cy + 5);
+                g.drawLine(cx + 5, cy - 5, cx - 5, cy + 5);
+            } else {
+                g.drawLine(cx - 6, cy + 1, cx + 6, cy + 1);
+            }
+            g.dispose();
+        }
     }
 
     // ------------------------------------------------------------ баннер обновления
