@@ -15,7 +15,8 @@ BerryUp не запускает игру сам и не заменяет Prism: 
 
 ## Скачать
 
-- **BerryUp.jar** — весь лаунчер одним файлом: <https://evilvalue.github.io/berry/launcher/BerryUp.jar>
+- **BerryUp.zip** — лаунчер одним архивом (`BerryUp.jar` + `START-BerryUp.bat`): <https://github.com/evilvalue/berry-launcher/releases/latest/download/BerryUp.zip>
+- **BerryUp.jar** — только jar, если `.jar` уже открывается Java: <https://evilvalue.github.io/berry/launcher/BerryUp.jar>
 - Релизы: <https://github.com/evilvalue/berry-launcher/releases>
 - Метаданные версии и хеши: <https://evilvalue.github.io/berry/launcher/latest-java.json>
 
@@ -24,11 +25,11 @@ BerryUp не запускает игру сам и не заменяет Prism: 
 а скачанный файл уберёт. Дальше запускай с ярлыка: ярлык берёт Java из Prism
 (или текущую Java 9+), поэтому на масштабе Windows 125–150% шрифт остаётся резким.
 Отдельно ставить Java не нужно — BerryUp рассчитан на Java 8+ и запускается на
-Java из Prism Launcher. Никаких скриптов и архивов рядом с лаунчером нет.
+Java из Prism Launcher. В архиве рядом с jar лежит `START-BerryUp.bat` — двойной щелчок по нему и запускает лаунчер.
 
-На чистой Windows `.jar` может быть ничем не связан: тогда правый клик по файлу →
-«Открыть с помощью» → `javaw.exe` из `%APPDATA%\PrismLauncher\java\java-runtime-*\bin`,
-либо `java -jar BerryUp.jar` из командной строки.
+На чистой Windows `.jar` может быть ничем не связан, поэтому в архиве рядом с jar
+лежит `START-BerryUp.bat`: он находит Java из Prism, `JAVA_HOME`, `PATH`, официального
+лаунчера Minecraft или установленных JDK и запускает лаунчер без настройки ассоциаций.
 
 ## Сборка
 
